@@ -80,6 +80,7 @@ function(define_test_program name)
 endfunction()
 
 define_test_program(detects detects.cc)
+define_test_program(lambda lambda.cc)
 define_test_program(partial_curry partial_curry.cc)
 
 define_test_program(basic basic.cc)

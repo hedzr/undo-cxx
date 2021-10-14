@@ -8,8 +8,8 @@
 // Created by Hedzr Yeh on 2021/10/9.
 //
 
-#ifndef UNDO_CXX_UNDO_UNMGR_HH
-#define UNDO_CXX_UNDO_UNMGR_HH
+#ifndef UNDO_CXX_UNDO_ZCORE_HH
+#define UNDO_CXX_UNDO_ZCORE_HH
 
 #include "undo-log.hh"
 
@@ -20,22 +20,33 @@
 // forward ref --------------------
 namespace undo_cxx {
 
-    template<typename State>
+    class base_cmd_t;
+
+    template<typename State, typename Base = base_cmd_t>
     class cmd_t;
 
     template<typename State>
     struct context_t;
 
     /**
-     * @brief Undo Manager
+     * @brief Undo manager and Command system manager.
      * @tparam State  the object that is going to maintain the state of originator. It's just a POJO.
      * @tparam Cmd 
+     * @details undoable command system is a bundle of undo/redo and commands manager.
      */
-    template<typename State, typename Context = context_t<State>, typename Cmd = cmd_t<State>>
-    class undo_system_t;
+    template<typename State,
+             typename Context = context_t<State>,
+             typename BaseCmdT = base_cmd_t,
+             template<class S, class B> typename RefCmdT = cmd_t,
+             typename Cmd = RefCmdT<State, BaseCmdT>>
+    class undoable_cmd_system_t;
 
-    template<typename State, typename Context = context_t<State>, typename Cmd = cmd_t<State>>
-    using MgrT = undo_system_t<State, Context, Cmd>;
+    template<typename State,
+             typename Context = context_t<State>,
+             typename BaseCmdT = base_cmd_t,
+             template<class S, class B> typename RefCmdT = cmd_t,
+             typename Cmd = RefCmdT<State, BaseCmdT>>
+    using MgrT = undoable_cmd_system_t<State, Context, BaseCmdT, RefCmdT, Cmd>;
 
 } // namespace undo_cxx
 
@@ -44,9 +55,13 @@ namespace undo_cxx {
 
     template<typename State>
     struct context_t {
-        using Cmd = cmd_t<State>;
+        using BaseCmdT = base_cmd_t;
+        template<class S, class B>
+        using RefCmdT = cmd_t<S, B>;
+        using Cmd = RefCmdT<State, BaseCmdT>;
         using ContextT = context_t<State>;
-        using Mgr = MgrT<State, ContextT, Cmd>;
+        using Mgr = undoable_cmd_system_t<State, ContextT, BaseCmdT, cmd_t, Cmd>;
+
         Mgr &mgr;
 
         context_t(Mgr &m_)
@@ -55,18 +70,66 @@ namespace undo_cxx {
 
 } // namespace undo_cxx
 
+// state_t --------------------
+namespace undo_cxx {
+    template<typename State,
+             typename BaseCmdT = base_cmd_t,
+             template<class S, class B> typename RefCmdT = cmd_t,
+             typename Cmd = RefCmdT<State, BaseCmdT>>
+    struct state_t {
+        using StateT = State;
+        using CmdT = Cmd;
+        using CmdPtr = CmdT const *; // std::weak_ptr<const CmdT>;
+        StateT state{};
+        CmdPtr cmd_ptr{nullptr};
+
+        state_t() = default;
+        ~state_t() = default;
+        // state_t(CmdT const *c, StateT &&s)
+        //     : state{std::move(s)}
+        //     , cmd_ptr{c} {}
+        state_t(CmdT const *c, StateT const &s)
+            : state{s}
+            , cmd_ptr{c} {}
+
+        state_t &cmd(CmdT const *c) {
+            cmd_ptr = CmdPtr(c);
+            return (*this);
+        }
+
+        StateT const &operator()() const { return state; }
+        StateT &operator()() { return state; }
+
+        state_t &operator=(StateT const &s) {
+            state = s;
+            return (*this);
+        }
+
+        friend std::ostream &operator<<(std::ostream &os, state_t const &o) {
+            return os << o.state;
+        }
+    };
+} // namespace undo_cxx
+
 // cmd_t --------------------
 namespace undo_cxx {
 
-    template<typename State>
-    class cmd_t {
+    class base_cmd_t {
+    public:
+        virtual ~base_cmd_t() {}
+    };
+
+    template<typename State, typename Base>
+    class cmd_t : public Base {
     public:
         virtual ~cmd_t() {}
 
         using ContextT = context_t<State>;
         void execute(ContextT &ctx) const { do_execute(ctx); }
 
-        using Memento = State;
+        using StateT = State;
+        using StatePtr = std::unique_ptr<StateT>;
+        using Memento = state_t<StateT>;
         using MementoPtr = typename std::unique_ptr<Memento>;
         MementoPtr save_state() const { return save_state_impl(); }
         void undo(Memento &memento) const { undo_impl(memento); }
@@ -80,19 +143,78 @@ namespace undo_cxx {
         virtual void redo_impl(Memento &memento) const = 0;
     };
 
-    template<typename State>
-    class UndoRedoCmdBase : public cmd_t<State> {
+} // namespace undo_cxx
+
+// base_undo_redo_base_cmd_t --------------------
+namespace undo_cxx {
+
+    struct scriptable_cmd {
+        //
+    };
+
+    /**
+     * @brief A composite command which groups the multiple commands as one.
+     */
+    template<typename State, typename BaseCmdT = base_cmd_t,
+             template<class S, class B> typename RefCmdT = cmd_t>
+    class composite_cmd_t : public RefCmdT<State, BaseCmdT> {
     public:
-        ~UndoRedoCmdBase() {}
+        virtual ~composite_cmd_t() {}
+
+        using CmdT = RefCmdT<State, BaseCmdT>;
+        using ContainerT = std::list<CmdT>;
+        using ContextT = typename CmdT::ContextT;
+        using Memento = typename CmdT::Memento;
+        using MementoPtr = typename CmdT::MementoPtr;
+
+        template<class _InputIterator, class _Function>
+        _Function for_each(_Function &&fn) {
+            return std::for_each(_commands.begin(), _commands.end(), fn);
+        }
+
+    protected:
+        void do_execute(ContextT &ctx) const override {
+            for_each([&](CmdT const &cmd) {
+                cmd.do_execute(ctx);
+            });
+        }
+        MementoPtr save_state_impl() const override {
+            return std::make_unique<Memento>(this, "");
+        }
+        void undo_impl(Memento &memento) const override {
+            UNUSED(memento);
+        }
+        void redo_impl(Memento &memento) const override {
+            UNUSED(memento);
+        }
+
+    private:
+        ContainerT _commands;
+    };
+
+} // namespace undo_cxx
+
+// base_undo_redo_base_cmd_t --------------------
+namespace undo_cxx {
+
+    template<typename State, typename BaseCmdT = base_cmd_t,
+             template<class S, class B> typename RefCmdT = cmd_t>
+    class base_undo_redo_base_cmd_t : public RefCmdT<State, BaseCmdT> {
+    public:
+        ~base_undo_redo_base_cmd_t() {}
+
+        /** @brief don't record this command into the undo/redo history */
         bool can_be_memento() const override { return false; }
     };
 
-    template<typename State>
-    class UndoCmdBase : public UndoRedoCmdBase<State> {
+    /** @brief your UndoCmd should be derived from base_undo_cmd_t */
+    template<typename State, typename BaseCmdT = base_cmd_t,
+             template<class S, class B> typename RefCmdT = cmd_t>
+    class base_undo_cmd_t : public base_undo_redo_base_cmd_t<State, BaseCmdT, RefCmdT> {
     public:
-        ~UndoCmdBase() {}
+        ~base_undo_cmd_t() {}
 
-        using Base = UndoRedoCmdBase<State>;
+        using Base = base_undo_redo_base_cmd_t<State>;
         using Memento = typename Base::Memento;
         using MementoPtr = typename Base::MementoPtr;
         using ContextT = typename Base::ContextT;
@@ -101,12 +223,14 @@ namespace undo_cxx {
         void do_execute(ContextT &ctx) const override;
     };
 
-    template<typename State>
-    class RedoCmdBase : public UndoRedoCmdBase<State> {
+    /** @brief your RedoCmd should be derived from base_redo_cmd_t */
+    template<typename State, typename BaseCmdT = base_cmd_t,
+             template<class S, class B> typename RefCmdT = cmd_t>
+    class base_redo_cmd_t : public base_undo_redo_base_cmd_t<State, BaseCmdT, RefCmdT> {
     public:
-        ~RedoCmdBase() {}
+        ~base_redo_cmd_t() {}
 
-        using Base = UndoRedoCmdBase<State>;
+        using Base = base_undo_redo_base_cmd_t<State>;
         using Memento = typename Base::Memento;
         using MementoPtr = typename Base::MementoPtr;
         using ContextT = typename Base::ContextT;
@@ -117,21 +241,28 @@ namespace undo_cxx {
 
 } // namespace undo_cxx
 
-// undo_system_t --------------------
+// undoable_cmd_system_t --------------------
 namespace undo_cxx {
 
-    template<typename State, typename Context, typename Cmd>
-    class undo_system_t {
+    template<typename State,
+             typename Context,
+             typename BaseCmdT,
+             template<class S, class B> typename RefCmdT,
+             typename Cmd>
+    class undoable_cmd_system_t {
     public:
-        ~undo_system_t() = default;
+        ~undoable_cmd_system_t() = default;
 
-        using Memento = typename Cmd::Memento;
+        using StateT = State;
+        using ContextT = Context;
+        using CmdT = Cmd;
+        using Memento = typename CmdT::Memento;
         using MementoPtr = typename std::unique_ptr<Memento>;
         // using Container = Stack;
         using Container = std::list<MementoPtr>;
         using Iterator = typename Container::iterator;
+
         using size_type = typename Container::size_type;
-        using ContextT = Context;
 
         template<typename T, typename = void>
         struct has_save_state : std::false_type {};
@@ -154,15 +285,15 @@ namespace undo_cxx {
         struct has_can_be_memento<T, decltype(void(std::declval<T &>().can_be_memento()))> : std::true_type {};
 
     public:
-        void invoke(Cmd const &cmd) {
+        void invoke(CmdT const &cmd) {
             cmd.execute(_ctx);
-            if constexpr (has_can_be_memento<Cmd>::value) {
+            if constexpr (has_can_be_memento<CmdT>::value) {
                 if (cmd.can_be_memento())
                     save(cmd);
             }
         }
-        void undo(Cmd const &undo_cmd) {
-            if constexpr (has_undo<Cmd>::value) {
+        void undo(CmdT const &undo_cmd) {
+            if constexpr (has_undo<CmdT>::value) {
                 undo_cmd.undo(_ctx, 1);
                 return;
             }
@@ -171,8 +302,8 @@ namespace undo_cxx {
                 // undo ok
             }
         }
-        void redo(Cmd const &redo_cmd) {
-            if constexpr (has_redo<Cmd>::value) {
+        void redo(CmdT const &redo_cmd) {
+            if constexpr (has_redo<CmdT>::value) {
                 redo_cmd.redo(_ctx, 1);
                 return;
             }
@@ -182,8 +313,8 @@ namespace undo_cxx {
             }
         }
 
-        void undo(Cmd const &undo_cmd, int delta) {
-            if constexpr (has_undo<Cmd>::value) {
+        void undo(CmdT const &undo_cmd, int delta) {
+            if constexpr (has_undo<CmdT>::value) {
                 undo_cmd.undo(_ctx, delta);
                 return;
             }
@@ -198,8 +329,8 @@ namespace undo_cxx {
                 }
             }
         }
-        void redo(Cmd const &redo_cmd, int delta) {
-            if constexpr (has_redo<Cmd>::value) {
+        void redo(CmdT const &redo_cmd, int delta) {
+            if constexpr (has_redo<CmdT>::value) {
                 redo_cmd.redo(_ctx, delta);
                 return;
             }
@@ -218,6 +349,7 @@ namespace undo_cxx {
         MementoPtr &focused_item() { return *_position; }
         MementoPtr const &focused_item() const { return *_position; }
         std::ptrdiff_t position() { return std::distance(_saved_states.begin(), _position); }
+
         auto size() const { return _saved_states.size(); }
         bool empty() const { return _saved_states.empty(); }
         bool can_restore() const { return !empty() && _position != _saved_states.begin(); }
@@ -225,10 +357,15 @@ namespace undo_cxx {
         bool can_undo() const { return can_restore(); }
         bool can_redo() const { return can_replay(); }
 
+        void clear() {
+            _saved_states.clear();
+            _position = _saved_states.end();
+        }
+
     private:
-        void save(Cmd const &cmd) {
+        void save(CmdT const &cmd) {
             static_assert("expecting member function present: Memento Cmd::save_state()");
-            if constexpr (has_save_state<Cmd>::value) {
+            if constexpr (has_save_state<CmdT>::value) {
                 auto m = cmd.save_state();
                 push(std::move(m));
             }
@@ -347,16 +484,20 @@ namespace undo_cxx {
 // inline --------------------
 namespace undo_cxx {
 
-    template<typename State>
-    inline void UndoCmdBase<State>::do_execute(ContextT &ctx) const {
+    template<typename State, typename BaseCmdT,
+             template<class S, class B> typename RefCmdT>
+    inline void base_undo_cmd_t<State, BaseCmdT, RefCmdT>::
+            do_execute(ContextT &ctx) const {
         ctx.mgr.undo(*this);
     }
 
-    template<typename State>
-    inline void RedoCmdBase<State>::do_execute(ContextT &ctx) const {
+    template<typename State, typename BaseCmdT,
+             template<class S, class B> typename RefCmdT>
+    inline void base_redo_cmd_t<State, BaseCmdT, RefCmdT>::
+            do_execute(ContextT &ctx) const {
         ctx.mgr.redo(*this);
     }
 
 } // namespace undo_cxx
 
-#endif //UNDO_CXX_UNDO_UNMGR_HH
+#endif //UNDO_CXX_UNDO_ZCORE_HH

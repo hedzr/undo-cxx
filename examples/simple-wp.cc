@@ -1,6 +1,13 @@
+// undo_cxx Library
+// Copyright © 2021 Hedzr Yeh.
 //
-// Created by Hedzr Yeh on 2021/10/9.
+// This file is released under the terms of the MIT license.
+// Read /LICENSE for more information.
+
 //
+// Created by Hedzr Yeh on 2021/10/14.
+//
+
 
 #include "undo_cxx.hh"
 
@@ -21,8 +28,8 @@
 #include <vector>
 
 
-namespace dp { namespace undo { namespace test {
-    
+namespace word_processor {
+
     template<typename State>
     class FontStyleCmd : public undo_cxx::cmd_t<State> {
     public:
@@ -124,32 +131,47 @@ namespace dp { namespace undo { namespace test {
         std::string _info{"do 'redo'"};
     };
 
-}}} // namespace dp::undo::test
-namespace dp { namespace undo { namespace bugs {
-}}} // namespace dp::undo::bugs
+} // namespace word_processor
+namespace word_processor {
+
+    class actions_mgr {
+    public:
+        using State = std::string;
+        using M = undo_cxx::undoable_cmd_system_t<State>;
+        using UndoCmdT = UndoCmd<State>;
+        using RedoCmdT = RedoCmd<State>;
+        using FontStyleCmdT = FontStyleCmd<State>;
+
+        void invoke(typename M::CmdT const &cmd) {
+            _undoable_cmd_system.invoke(cmd);
+        }
+
+    private:
+        M _undoable_cmd_system;
+    };
+
+} // namespace word_processor
 
 void test_undo_sys() {
-    using namespace dp::undo::test;
-    using namespace dp::undo::bugs;
+    using namespace word_processor;
+    actions_mgr mgr;
 
-    using State = std::string;
-    using M = undo_cxx::undoable_cmd_system_t<State>;
-    using UndoCmdT = UndoCmd<State>;
-    using RedoCmdT = RedoCmd<State>;
-    using FontStyleCmdT = FontStyleCmd<State>;
+    // do some stuffs
 
-    M undoable_cmd_system;
+    mgr.invoke(actions_mgr::FontStyleCmdT{"italic state1"});
+    mgr.invoke(actions_mgr::FontStyleCmdT{"italic-bold state2"});
+    mgr.invoke(actions_mgr::FontStyleCmdT{"underline state3"});
+    mgr.invoke(actions_mgr::FontStyleCmdT{"italic state4"});
 
-    undoable_cmd_system.invoke(FontStyleCmdT{"italic state1"});
-    undoable_cmd_system.invoke(FontStyleCmdT{"italic-bold state2"});
-    undoable_cmd_system.invoke(FontStyleCmdT{"underline state3"});
-    undoable_cmd_system.invoke(FontStyleCmdT{"italic state4"});
+    // and try to undo or redo
 
-    undoable_cmd_system.invoke(UndoCmdT{"undo 1"});
-    undoable_cmd_system.invoke(UndoCmdT{"undo 2"});
-    undoable_cmd_system.invoke(RedoCmdT{"redo 1"});
-    undoable_cmd_system.invoke(UndoCmdT{"undo 3"});
-    undoable_cmd_system.invoke(UndoCmdT{"undo 4"});
+    mgr.invoke(actions_mgr::UndoCmdT{"undo 1"});
+    mgr.invoke(actions_mgr::UndoCmdT{"undo 2"});
+
+    mgr.invoke(actions_mgr::RedoCmdT{"redo 1"});
+
+    mgr.invoke(actions_mgr::UndoCmdT{"undo 3"});
+    mgr.invoke(actions_mgr::UndoCmdT{"undo 4"});
 }
 
 int main() {

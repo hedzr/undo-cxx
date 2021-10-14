@@ -20,7 +20,6 @@
 #include <tuple>
 #include <vector>
 
-
 namespace undo_cxx::log {
 
     namespace detail {
@@ -171,7 +170,7 @@ namespace undo_cxx::log {
 #endif
 #endif
 
-#if defined(HICC_ENABLE_VERBOSE_LOG)
+#if defined(UNDO_CXX_ENABLE_VERBOSE_LOG)
 // inline void debug(char const *fmt, ...) {
 //     va_list va;
 //     va_start(va, fmt);

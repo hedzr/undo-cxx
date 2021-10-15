@@ -25,6 +25,9 @@
 #include "undo-common.hh"
 #include "undo-log.hh"
 
+#include "undo-dbg.hh"
+#include "undo-util.hh"
+
 #include "undo-zcore.hh"
 
 #endif //UNDO_CXX_UNDO_HH

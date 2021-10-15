@@ -36,8 +36,10 @@ set(UNDO_CXX_header_files
         ${CMAKE_GENERATED_DIR}/${PROJECT_NAME}-config.hh
         ${CMAKE_CURRENT_SOURCE_DIR}/include/undo_cxx/undo.hh
         ${CMAKE_CURRENT_SOURCE_DIR}/include/undo_cxx/undo-common.hh
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/undo_cxx/undo-dbg.hh
         ${CMAKE_CURRENT_SOURCE_DIR}/include/undo_cxx/undo-def.hh
         ${CMAKE_CURRENT_SOURCE_DIR}/include/undo_cxx/undo-log.hh
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/undo_cxx/undo-util.hh
         ${CMAKE_CURRENT_SOURCE_DIR}/include/undo_cxx/undo-zcore.hh
         )
 define_cxx_project(${PROJECT_NAME} ${PROJECT_MACRO_PREFIX})

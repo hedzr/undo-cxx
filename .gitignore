@@ -1085,7 +1085,7 @@ _deps
 
 # Kernel Module Compile Results
 *.mod*
-*.cmd
+*.command
 .tmp_versions/
 modules.order
 Module.symvers

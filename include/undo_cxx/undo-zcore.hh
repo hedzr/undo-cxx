@@ -79,35 +79,58 @@ namespace undo_cxx {
     struct state_t {
         using StateT = State;
         using CmdT = Cmd;
-        using CmdPtr = CmdT const *; // std::weak_ptr<const CmdT>;
-        StateT state{};
-        CmdPtr cmd_ptr{nullptr};
+        // using CmdPtr = CmdT const *; // std::weak_ptr<const CmdT>;
+        // using CmdWP = std::weak_ptr<CmdT const>;
+        // using CmdSPC = std::shared_ptr<CmdT const>;
+        using CmdSP = std::shared_ptr<CmdT>;
+        using Pair = std::pair<CmdSP, StateT>;
+        using PairVec = std::vector<Pair>;
 
         state_t() = default;
         ~state_t() = default;
-        // state_t(CmdT const *c, StateT &&s)
-        //     : state{std::move(s)}
-        //     , cmd_ptr{c} {}
-        state_t(CmdT const *c, StateT const &s)
-            : state{s}
-            , cmd_ptr{c} {}
+        state_t(CmdSP &c, StateT const &s) { pairs.push_back(Pair{c, s}); }
 
-        state_t &cmd(CmdT const *c) {
-            cmd_ptr = CmdPtr(c);
-            return (*this);
+        void add_state(CmdSP &c, StateT const &s) { emplace_back(c, s); }
+        void emplace_back(CmdSP &c, StateT const &s) { pairs.emplace_back(c, s); }
+
+        template<class _InputIterator, class _Function>
+        _Function for_each_children(_Function &&fn) {
+            auto it = pairs.begin();
+            it++;
+            return std::for_each(it, pairs.end(), fn);
         }
 
-        StateT const &operator()() const { return state; }
-        StateT &operator()() { return state; }
+        CmdSP &command() { return pairs[0].first; }
+        state_t &command(CmdSP &c) {
+            if (pairs.empty())
+                pairs.emplace_back(c, StateT{});
+            else
+                pairs[0].first = CmdSP(c);
+            return (*this);
+        }
+        StateT const &operator()() const { return pairs[0].second; }
+        StateT &operator()() { return pairs[0].second; }
 
         state_t &operator=(StateT const &s) {
-            state = s;
+            if (pairs.empty())
+                pairs.emplace_back(CmdSP{}, s);
+            else
+                pairs[0].second = s;
             return (*this);
         }
 
         friend std::ostream &operator<<(std::ostream &os, state_t const &o) {
-            return os << o.state;
+            return os << o();
         }
+
+    private:
+        template<class _InputIterator, class _Function>
+        _Function for_each(_Function &&fn) {
+            return std::for_each(pairs.begin(), pairs.end(), fn);
+        }
+
+    private:
+        PairVec pairs{};
     };
 } // namespace undo_cxx
 
@@ -124,33 +147,48 @@ namespace undo_cxx {
     public:
         virtual ~cmd_t() {}
 
+        using Self = cmd_t<State, Base>;
+        using CmdSP = std::shared_ptr<Self>;
+        using CmdSPC = std::shared_ptr<Self const>;
+        using CmdId = std::string_view;
+        CmdId id() const { return debug::type_name<Self>(); }
+
         using ContextT = context_t<State>;
-        void execute(ContextT &ctx) const { do_execute(ctx); }
+        void execute(CmdSP &sender, ContextT &ctx) { do_execute(sender, ctx); }
 
         using StateT = State;
-        using StatePtr = std::unique_ptr<StateT>;
+        using StateUniPtr = std::unique_ptr<StateT>;
         using Memento = state_t<StateT>;
         using MementoPtr = typename std::unique_ptr<Memento>;
-        MementoPtr save_state() const { return save_state_impl(); }
-        void undo(Memento &memento) const { undo_impl(memento); }
-        void redo(Memento &memento) const { redo_impl(memento); }
+        MementoPtr save_state(CmdSP &sender) { return save_state_impl(sender); }
+        void undo(CmdSP &sender, ContextT &ctx, Memento &memento) { undo_impl(sender, ctx, memento); }
+        void redo(CmdSP &sender, ContextT &ctx, Memento &memento) { redo_impl(sender, ctx, memento); }
         virtual bool can_be_memento() const { return true; }
 
     protected:
-        virtual void do_execute(ContextT &ctx) const = 0;
-        virtual MementoPtr save_state_impl() const = 0;
-        virtual void undo_impl(Memento &memento) const = 0;
-        virtual void redo_impl(Memento &memento) const = 0;
+        virtual void do_execute(CmdSP &sender, ContextT &ctx) = 0;
+        virtual MementoPtr save_state_impl(CmdSP &sender) = 0;
+        virtual void undo_impl(CmdSP &sender, ContextT &ctx, Memento &memento) = 0;
+        virtual void redo_impl(CmdSP &sender, ContextT &ctx, Memento &memento) = 0;
     };
 
 } // namespace undo_cxx
 
-// base_undo_redo_base_cmd_t --------------------
-namespace undo_cxx {
+#define UNDO_CXX_DEFINE_CMD_TYPES()               \
+    using Base = Super;                           \
+    using CmdSP = typename Super::CmdSP;          \
+    using CmdId = typename Super::CmdId;          \
+    using Memento = typename Base::Memento;       \
+    using MementoPtr = typename Base::MementoPtr; \
+    using ContextT = typename Base::ContextT
 
-    struct scriptable_cmd {
-        //
-    };
+#define UNDO_CXX_DEFINE_DEFAULT_CMD_TYPES(SelfType, SuperType) \
+    using Super = SuperType<State>;                            \
+    using Self = SelfType<State>;                              \
+    UNDO_CXX_DEFINE_CMD_TYPES()
+
+// composite_cmd_t --------------------
+namespace undo_cxx {
 
     /**
      * @brief A composite command which groups the multiple commands as one.
@@ -161,31 +199,68 @@ namespace undo_cxx {
     public:
         virtual ~composite_cmd_t() {}
 
-        using CmdT = RefCmdT<State, BaseCmdT>;
-        using ContainerT = std::list<CmdT>;
-        using ContextT = typename CmdT::ContextT;
-        using Memento = typename CmdT::Memento;
-        using MementoPtr = typename CmdT::MementoPtr;
+        using Super = RefCmdT<State, BaseCmdT>;
+        using Self = composite_cmd_t<State, BaseCmdT, RefCmdT>;
+        UNDO_CXX_DEFINE_CMD_TYPES();
+        // using CmdSP = typename Super::CmdSP;
+        // using CmdId = typename Super::CmdId;
+        // using ContextT = typename CmdT::ContextT;
+        // using Memento = typename CmdT::Memento;
+        // using MementoPtr = typename CmdT::MementoPtr;
+        using StateT = State;
+        using CmdT = typename Super::Self; //RefCmdT<StateT, BaseCmdT>;
+        using CmdPtr = CmdT const *;
+        using ContainerT = std::list<CmdSP>;
 
+
+    public:
+        void add_command(CmdSP &&cmd) {
+            _commands.emplace_back(cmd);
+        }
         template<class _InputIterator, class _Function>
         _Function for_each(_Function &&fn) {
             return std::for_each(_commands.begin(), _commands.end(), fn);
         }
 
     protected:
-        void do_execute(ContextT &ctx) const override {
-            for_each([&](CmdT const &cmd) {
-                cmd.do_execute(ctx);
+        void do_execute(CmdSP &sender, ContextT &ctx) override {
+            UNUSED(sender);
+            for_each([&](CmdSP &cmd) {
+                cmd->do_execute(ctx);
             });
         }
-        MementoPtr save_state_impl() const override {
-            return std::make_unique<Memento>(this, "");
+        MementoPtr save_state_impl(CmdSP &sender) override {
+            MementoPtr r = std::make_unique<Memento>(this, StateT{});
+            for_each([sender, r, this](CmdSP &cmd) {
+                r->emplace_back(cmd, cmd->save_state_impl(sender));
+            });
+            return r;
         }
-        void undo_impl(Memento &memento) const override {
+        void undo_impl(CmdSP &sender, ContextT &ctx, Memento &memento) override {
             UNUSED(memento);
+            if (memento.command().get() == this) {
+                // composite memento (state_t):
+                memento.for_each_children([ctx](typename Memento::Pair const &item) {
+                    item.first.undo_impl(item.first, ctx, item.second);
+                });
+            } else {
+                for_each([sender, ctx, memento, this](CmdSP &cmd) {
+                    cmd->undo(sender, ctx, memento);
+                });
+            }
         }
-        void redo_impl(Memento &memento) const override {
+        void redo_impl(CmdSP &sender, ContextT &ctx, Memento &memento) override {
             UNUSED(memento);
+            if (memento.command() == this) {
+                // composie memento (state_t):
+                memento.for_each_children([ctx](typename Memento::Pair const &item) {
+                    item.first.redo_impl(item.first, ctx, item.second);
+                });
+            } else {
+                for_each([sender, ctx, memento, this](CmdSP &cmd) {
+                    cmd->redo(sender, ctx, memento);
+                });
+            }
         }
 
     private:
@@ -195,6 +270,7 @@ namespace undo_cxx {
 } // namespace undo_cxx
 
 // base_undo_redo_base_cmd_t --------------------
+// base_undo_cmd_t, base_redo_cmd_t
 namespace undo_cxx {
 
     template<typename State, typename BaseCmdT = base_cmd_t,
@@ -213,14 +289,10 @@ namespace undo_cxx {
     class base_undo_cmd_t : public base_undo_redo_base_cmd_t<State, BaseCmdT, RefCmdT> {
     public:
         ~base_undo_cmd_t() {}
-
-        using Base = base_undo_redo_base_cmd_t<State>;
-        using Memento = typename Base::Memento;
-        using MementoPtr = typename Base::MementoPtr;
-        using ContextT = typename Base::ContextT;
+        UNDO_CXX_DEFINE_DEFAULT_CMD_TYPES(base_undo_cmd_t, base_undo_redo_base_cmd_t);
 
     protected:
-        void do_execute(ContextT &ctx) const override;
+        void do_execute(CmdSP &sender, ContextT &ctx) override;
     };
 
     /** @brief your RedoCmd should be derived from base_redo_cmd_t */
@@ -229,14 +301,10 @@ namespace undo_cxx {
     class base_redo_cmd_t : public base_undo_redo_base_cmd_t<State, BaseCmdT, RefCmdT> {
     public:
         ~base_redo_cmd_t() {}
-
-        using Base = base_undo_redo_base_cmd_t<State>;
-        using Memento = typename Base::Memento;
-        using MementoPtr = typename Base::MementoPtr;
-        using ContextT = typename Base::ContextT;
+        UNDO_CXX_DEFINE_DEFAULT_CMD_TYPES(base_redo_cmd_t, base_undo_redo_base_cmd_t);
 
     protected:
-        void do_execute(ContextT &ctx) const override;
+        void do_execute(CmdSP &sender, ContextT &ctx) override;
     };
 
 } // namespace undo_cxx
@@ -256,6 +324,8 @@ namespace undo_cxx {
         using StateT = State;
         using ContextT = Context;
         using CmdT = Cmd;
+        using CmdSP = std::shared_ptr<CmdT>;
+        using CmdSPC = std::shared_ptr<CmdT const>;
         using Memento = typename CmdT::Memento;
         using MementoPtr = typename std::unique_ptr<Memento>;
         // using Container = Stack;
@@ -285,16 +355,17 @@ namespace undo_cxx {
         struct has_can_be_memento<T, decltype(void(std::declval<T &>().can_be_memento()))> : std::true_type {};
 
     public:
-        void invoke(CmdT const &cmd) {
-            cmd.execute(_ctx);
+        void invoke(CmdSP &cmd) {
+            cmd->execute(cmd, _ctx);
             if constexpr (has_can_be_memento<CmdT>::value) {
-                if (cmd.can_be_memento())
+                if (cmd->can_be_memento())
                     save(cmd);
             }
         }
-        void undo(CmdT const &undo_cmd) {
+        void undo(CmdSP &undo_cmd) {
             if constexpr (has_undo<CmdT>::value) {
-                undo_cmd.undo(_ctx, 1);
+                // void undo(sender, ctx, delta)
+                undo_cmd->undo(undo_cmd, _ctx, 1);
                 return;
             }
 
@@ -302,9 +373,10 @@ namespace undo_cxx {
                 // undo ok
             }
         }
-        void redo(CmdT const &redo_cmd) {
+        void redo(CmdSP &redo_cmd) {
             if constexpr (has_redo<CmdT>::value) {
-                redo_cmd.redo(_ctx, 1);
+                // void redo(sender, ctx, delta)
+                redo_cmd->redo(redo_cmd, _ctx, 1);
                 return;
             }
 
@@ -313,9 +385,10 @@ namespace undo_cxx {
             }
         }
 
-        void undo(CmdT const &undo_cmd, int delta) {
+        void undo(CmdSP &undo_cmd, int delta) {
             if constexpr (has_undo<CmdT>::value) {
-                undo_cmd.undo(_ctx, delta);
+                // void undo(sender, ctx, delta)
+                undo_cmd->undo(undo_cmd, _ctx, delta);
                 return;
             }
 
@@ -329,9 +402,10 @@ namespace undo_cxx {
                 }
             }
         }
-        void redo(CmdT const &redo_cmd, int delta) {
+        void redo(CmdSP redo_cmd, int delta) {
             if constexpr (has_redo<CmdT>::value) {
-                redo_cmd.redo(_ctx, delta);
+                // void redo(sender, ctx, delta)
+                redo_cmd->redo(redo_cmd, _ctx, delta);
                 return;
             }
 
@@ -363,10 +437,10 @@ namespace undo_cxx {
         }
 
     private:
-        void save(CmdT const &cmd) {
+        void save(CmdSP &cmd) {
             static_assert("expecting member function present: Memento Cmd::save_state()");
             if constexpr (has_save_state<CmdT>::value) {
-                auto m = cmd.save_state();
+                auto m = cmd->save_state(cmd);
                 push(std::move(m));
             }
         }
@@ -487,15 +561,17 @@ namespace undo_cxx {
     template<typename State, typename BaseCmdT,
              template<class S, class B> typename RefCmdT>
     inline void base_undo_cmd_t<State, BaseCmdT, RefCmdT>::
-            do_execute(ContextT &ctx) const {
-        ctx.mgr.undo(*this);
+            do_execute(CmdSP &sender, ContextT &ctx) {
+        // auto cmd = ctx.mgr.create(Self::id(), "");
+        // ctx.mgr.undo(cmd);
+        ctx.mgr.undo(sender);
     }
 
     template<typename State, typename BaseCmdT,
              template<class S, class B> typename RefCmdT>
     inline void base_redo_cmd_t<State, BaseCmdT, RefCmdT>::
-            do_execute(ContextT &ctx) const {
-        ctx.mgr.redo(*this);
+            do_execute(CmdSP &sender, ContextT &ctx) {
+        ctx.mgr.redo(sender);
     }
 
 } // namespace undo_cxx

@@ -65,6 +65,24 @@ inline void UNUSED([[maybe_unused]] Args &&...args) {
 #endif //_UNUSED_DEFINED
 
 
+//
+
+
+#ifndef CLAZZ_NON_COPYABLE
+#define CLAZZ_NON_COPYABLE(clz)           \
+    clz(const clz &) = delete;            \
+    clz(clz &&) noexcept = delete;        \
+    clz &operator=(const clz &) = delete; \
+    clz &operator=(clz &&) noexcept = delete
+#endif
+
+#ifndef CLAZZ_NON_MOVEABLE
+#define CLAZZ_NON_MOVEABLE(clz)    \
+    clz(clz &&) noexcept = delete; \
+    clz &operator=(clz &&) noexcept = delete
+#endif
+
+
 ////////////////////////////////////////////////////////////////////////
 
 #include <stdlib.h>

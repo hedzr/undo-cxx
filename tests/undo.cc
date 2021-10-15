@@ -22,7 +22,7 @@
 
 
 namespace dp { namespace undo { namespace test {
-    
+
     template<typename State>
     class FontStyleCmd : public undo_cxx::cmd_t<State> {
     public:
@@ -30,26 +30,25 @@ namespace dp { namespace undo { namespace test {
         FontStyleCmd() {}
         FontStyleCmd(std::string const &default_state_info)
             : _info(default_state_info) {}
-
-        using Base = undo_cxx::cmd_t<State>;
-        using Memento = typename Base::Memento;
-        using MementoPtr = typename Base::MementoPtr;
-        using ContextT = typename Base::ContextT;
+        UNDO_CXX_DEFINE_DEFAULT_CMD_TYPES(FontStyleCmd, undo_cxx::cmd_t);
 
     protected:
-        void do_execute(ContextT &) const override {
+        void do_execute(CmdSP &sender, ContextT &) override {
+            UNUSED(sender);
+            // ... do sth to add/remove font style to/from
+            // current selection in current editor ...
             std::cout << "<<" << _info << ">>" << '\n';
         }
-        MementoPtr save_state_impl() const override {
-            return std::make_unique<Memento>(this, _info);
+        MementoPtr save_state_impl(CmdSP &sender) override {
+            return std::make_unique<Memento>(sender, _info);
         }
-        void undo_impl(Memento &memento) const override {
-            memento = "make normal (de-italic)";
-            memento.cmd(this);
+        void undo_impl(CmdSP &sender, ContextT &, Memento &memento) override {
+            memento = _info;
+            memento.command(sender);
         }
-        void redo_impl(Memento &memento) const override {
-            memento = "make italic again";
-            memento.cmd(this);
+        void redo_impl(CmdSP &sender, ContextT &, Memento &memento) override {
+            memento = _info;
+            memento.command(sender);
         }
 
     private:
@@ -63,27 +62,24 @@ namespace dp { namespace undo { namespace test {
         UndoCmd() {}
         UndoCmd(std::string const &default_state_info)
             : _info(default_state_info) {}
-
-        using Base = undo_cxx::base_undo_cmd_t<State>;
-        using Memento = typename Base::Memento;
-        using MementoPtr = typename Base::MementoPtr;
-        using ContextT = typename Base::ContextT;
+        UNDO_CXX_DEFINE_DEFAULT_CMD_TYPES(UndoCmd, undo_cxx::base_undo_cmd_t);
 
     protected:
-        void do_execute(ContextT &ctx) const override {
+        void do_execute(CmdSP &sender, ContextT &ctx) override {
             std::cout << "<<" << _info << ">>" << '\n';
-            Base::do_execute(ctx);
+            Base::do_execute(sender, ctx);
         }
-        MementoPtr save_state_impl() const override {
-            return std::make_unique<Memento>(this, _info);
+        MementoPtr save_state_impl(CmdSP &sender) override {
+            return std::make_unique<Memento>(sender, _info);
         }
-        void undo_impl(Memento &memento) const override {
+        void undo_impl(CmdSP &sender, ContextT &, Memento &memento) override {
             memento = "do 'undo'";
-            memento.cmd(this);
+            // auto sp = typename Memento::CmdSP(this);
+            memento.command(sender);
         }
-        void redo_impl(Memento &memento) const override {
+        void redo_impl(CmdSP &sender, ContextT &, Memento &memento) override {
             memento = "do 'un-undo' again";
-            memento.cmd(this);
+            memento.command(sender);
         }
 
     private:
@@ -97,27 +93,23 @@ namespace dp { namespace undo { namespace test {
         RedoCmd() {}
         RedoCmd(std::string const &default_state_info)
             : _info(default_state_info) {}
-
-        using Base = undo_cxx::base_redo_cmd_t<State>;
-        using Memento = typename Base::Memento;
-        using MementoPtr = typename Base::MementoPtr;
-        using ContextT = typename Base::ContextT;
+        UNDO_CXX_DEFINE_DEFAULT_CMD_TYPES(RedoCmd, undo_cxx::base_redo_cmd_t);
 
     protected:
-        void do_execute(ContextT &ctx) const override {
+        void do_execute(CmdSP &sender, ContextT &ctx) override {
             std::cout << "<<" << _info << ">>" << '\n';
-            Base::do_execute(ctx);
+            Base::do_execute(sender, ctx);
         }
-        MementoPtr save_state_impl() const override {
-            return std::make_unique<Memento>(this, _info);
+        MementoPtr save_state_impl(CmdSP &sender) override {
+            return std::make_unique<Memento>(sender, _info);
         }
-        void undo_impl(Memento &memento) const override {
+        void undo_impl(CmdSP &sender, ContextT &, Memento &memento) override {
             memento = "do 'redo'";
-            memento.cmd(this);
+            memento.command(sender);
         }
-        void redo_impl(Memento &memento) const override {
+        void redo_impl(CmdSP &sender, ContextT &, Memento &memento) override {
             memento = "do 'un-redo' again";
-            memento.cmd(this);
+            memento.command(sender);
         }
 
     private:
@@ -140,16 +132,29 @@ void test_undo_sys() {
 
     M undoable_cmd_system;
 
-    undoable_cmd_system.invoke(FontStyleCmdT{"italic state1"});
-    undoable_cmd_system.invoke(FontStyleCmdT{"italic-bold state2"});
-    undoable_cmd_system.invoke(FontStyleCmdT{"underline state3"});
-    undoable_cmd_system.invoke(FontStyleCmdT{"italic state4"});
+    // do some stuffs
 
-    undoable_cmd_system.invoke(UndoCmdT{"undo 1"});
-    undoable_cmd_system.invoke(UndoCmdT{"undo 2"});
-    undoable_cmd_system.invoke(RedoCmdT{"redo 1"});
-    undoable_cmd_system.invoke(UndoCmdT{"undo 3"});
-    undoable_cmd_system.invoke(UndoCmdT{"undo 4"});
+    M::CmdSP sp = std::make_shared<FontStyleCmdT>("italic state1");
+    undoable_cmd_system.invoke(sp);
+    sp = std::make_shared<FontStyleCmdT>("italic-bold state2");
+    undoable_cmd_system.invoke(sp);
+    sp = std::make_shared<FontStyleCmdT>("underline state3");
+    undoable_cmd_system.invoke(sp);
+    sp = std::make_shared<FontStyleCmdT>("italic state4");
+    undoable_cmd_system.invoke(sp);
+
+    // and try to undo or redo
+
+    sp = std::make_shared<UndoCmdT>("undo 1");
+    undoable_cmd_system.invoke(sp);
+    sp = std::make_shared<UndoCmdT>("undo 2");
+    undoable_cmd_system.invoke(sp);
+    sp = std::make_shared<RedoCmdT>("redo 1");
+    undoable_cmd_system.invoke(sp);
+    sp = std::make_shared<UndoCmdT>("undo 3");
+    undoable_cmd_system.invoke(sp);
+    sp = std::make_shared<UndoCmdT>("undo 4");
+    undoable_cmd_system.invoke(sp);
 }
 
 int main() {

@@ -36,6 +36,7 @@ namespace undo_cxx {
     using id_type = std::string_view;
 #endif
 
+#if defined(_MSC_VER)
     namespace detail {
         template<class T, bool = std::is_enum<T>::value>
         struct __enum_id_gen : public std::unary_function<T, id_type> {
@@ -52,6 +53,7 @@ namespace undo_cxx {
 
     template<typename T>
     struct id_gen : public detail::__enum_id_gen<T> {};
+#endif
 
     template<typename T>
     constexpr auto id_name() -> id_type {

@@ -24,7 +24,7 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug" AND NOT WIN32)
 else ()
     # In win32 or non-debug builds, debug_malloc is off by default
     option(USE_DEBUG_MALLOC "Building with memory leak detection capability." OFF)
-    option(USE_EBUG "Building with NON-DEBUG Mode" OFF)
+    option(USE_DEBUG "Building with NON-DEBUG Mode" OFF)
     if (CMAKE_BUILD_TYPE STREQUAL "Debug")
         set(CMAKE_BUILD_NAME "dbg" CACHE STRING "" FORCE)
         set(CMAKE_DEBUG_POSTFIX "d" CACHE STRING "" FORCE)

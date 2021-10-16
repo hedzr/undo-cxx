@@ -28,7 +28,7 @@ namespace undo_cxx::log {
             explicit Log(typename util::singleton<Log>::token) {}
             ~Log() = default;
 
-            // [[maybe_unused]] hicc::terminal::colors::colorize _c;
+            // [[maybe_unused]] undo_cxx::terminal::colors::colorize _c;
 
             template<class... Args>
             void log([[maybe_unused]] const char *fmt, [[maybe_unused]] Args const &...args) {
@@ -174,7 +174,7 @@ namespace undo_cxx::log {
 // inline void debug(char const *fmt, ...) {
 //     va_list va;
 //     va_start(va, fmt);
-//     hicc::log::log::vdebug(fmt, va);
+//     undo_cxx::log::log::vdebug(fmt, va);
 //     va_end(va);
 // }
 #if defined(_MSC_VER)

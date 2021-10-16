@@ -31,12 +31,12 @@
 namespace undo_cxx {
 
 #if defined(_MSC_VER)
-    using id_type = std::string; // or std::string_view
+    using id_type = std::string_view; // or std::string_view
 #else
     using id_type = std::string_view;
 #endif
 
-#if defined(_MSC_VER)
+#if !defined(_MSC_VER)
     namespace detail {
         template<class T, bool = std::is_enum<T>::value>
         struct __enum_id_gen : public std::unary_function<T, id_type> {
@@ -59,9 +59,7 @@ namespace undo_cxx {
     constexpr auto id_name() -> id_type {
         constexpr id_type v = debug::type_name<T>();
         constexpr auto end = v.find('<');
-        if (end != v.npos)
-            return v.substr(0, end);
-        return v;
+        return (end != v.npos) ? v.substr(0, end) : v;
     }
 
 } // namespace undo_cxx

@@ -134,27 +134,18 @@ void test_undo_sys() {
 
     // do some stuffs
 
-    M::CmdSP sp = std::make_shared<FontStyleCmdT>("italic state1");
-    undoable_cmd_system.invoke(sp);
-    sp = std::make_shared<FontStyleCmdT>("italic-bold state2");
-    undoable_cmd_system.invoke(sp);
-    sp = std::make_shared<FontStyleCmdT>("underline state3");
-    undoable_cmd_system.invoke(sp);
-    sp = std::make_shared<FontStyleCmdT>("italic state4");
-    undoable_cmd_system.invoke(sp);
+    undoable_cmd_system.invoke<FontStyleCmdT>("italic state1");
+    undoable_cmd_system.invoke<FontStyleCmdT>("italic-bold state2");
+    undoable_cmd_system.invoke<FontStyleCmdT>("underline state3");
+    undoable_cmd_system.invoke<FontStyleCmdT>("italic state4");
 
     // and try to undo or redo
 
-    sp = std::make_shared<UndoCmdT>("undo 1");
-    undoable_cmd_system.invoke(sp);
-    sp = std::make_shared<UndoCmdT>("undo 2");
-    undoable_cmd_system.invoke(sp);
-    sp = std::make_shared<RedoCmdT>("redo 1");
-    undoable_cmd_system.invoke(sp);
-    sp = std::make_shared<UndoCmdT>("undo 3");
-    undoable_cmd_system.invoke(sp);
-    sp = std::make_shared<UndoCmdT>("undo 4");
-    undoable_cmd_system.invoke(sp);
+    undoable_cmd_system.invoke<UndoCmdT>("undo 1");
+    undoable_cmd_system.invoke<UndoCmdT>("undo 2");
+    undoable_cmd_system.invoke<RedoCmdT>("redo 1");
+    undoable_cmd_system.invoke<UndoCmdT>("undo 3");
+    undoable_cmd_system.invoke<UndoCmdT>("undo 4");
 }
 
 int main() {

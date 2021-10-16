@@ -330,7 +330,6 @@ namespace undo_cxx {
         using ContextT = Context;
         using CmdT = Cmd;
         using CmdSP = std::shared_ptr<CmdT>;
-        using CmdSPC = std::shared_ptr<CmdT const>;
         using Memento = typename CmdT::Memento;
         using MementoPtr = typename std::unique_ptr<Memento>;
         // using Container = Stack;
@@ -366,6 +365,11 @@ namespace undo_cxx {
             if (cmd->can_be_memento())
                 save(cmd);
             // }
+        }
+        template<typename ConcreteCmd, typename... Args>
+        void invoke(Args &&...args) {
+            CmdSP sp = std::make_shared<ConcreteCmd>(args...);
+            invoke(sp);
         }
         void undo(CmdSP &undo_cmd) {
             if constexpr (has_undo<CmdT>::value) {

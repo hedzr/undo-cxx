@@ -127,18 +127,19 @@ namespace word_processor {
 
     namespace fct = undo_cxx::util::factory;
 
-    class actions_mgr {
+    class actions_controller {
     public:
         using State = std::string;
         using M = undo_cxx::undoable_cmd_system_t<State>;
+
         using UndoCmdT = UndoCmd<State>;
         using RedoCmdT = RedoCmd<State>;
         using FontStyleCmdT = FontStyleCmd<State>;
 
         using Factory = fct::factory<M::CmdT, UndoCmdT, RedoCmdT, FontStyleCmdT>;
 
-        actions_mgr() {}
-        ~actions_mgr() {}
+        actions_controller() {}
+        ~actions_controller() {}
 
         template<typename Cmd, typename... Args>
         void invoke(Args &&...args) {
@@ -164,7 +165,7 @@ namespace word_processor {
 
 void test_undo_sys() {
     using namespace word_processor;
-    actions_mgr mgr;
+    actions_controller controller;
 
     using State = std::string;
     using FontStyleCmd = word_processor::FontStyleCmd<State>;
@@ -172,23 +173,23 @@ void test_undo_sys() {
     using RedoCmd = word_processor::RedoCmd<State>;
     // do some stuffs
 
-    // mgr.invoke("word_processor::FontStyleCmd<std::__1::basic_string<char> >", "italic state1");
-    mgr.invoke<FontStyleCmd>("italic state1");
-    mgr.invoke<FontStyleCmd>("italic-bold state2");
-    mgr.invoke<FontStyleCmd>("underline state3");
-    mgr.invoke<FontStyleCmd>("italic state4");
+    // controller.invoke("word_processor::FontStyleCmd<std::__1::basic_string<char> >", "italic state1");
+    controller.invoke<FontStyleCmd>("italic state1");
+    controller.invoke<FontStyleCmd>("italic-bold state2");
+    controller.invoke<FontStyleCmd>("underline state3");
+    controller.invoke<FontStyleCmd>("italic state4");
 
     // and try to undo or redo
 
-    mgr.invoke<UndoCmd>("undo 1");
-    mgr.invoke<UndoCmd>("undo 2");
+    controller.invoke<UndoCmd>("undo 1");
+    controller.invoke<UndoCmd>("undo 2");
 
-    mgr.invoke<RedoCmd>("redo 1");
+    controller.invoke<RedoCmd>("redo 1");
 
-    mgr.invoke<UndoCmd>("undo 3");
-    mgr.invoke<UndoCmd>("undo 4");
-    
-    mgr.invoke("word_processor::RedoCmd", "redo 2 redo");
+    controller.invoke<UndoCmd>("undo 3");
+    controller.invoke<UndoCmd>("undo 4");
+
+    controller.invoke("word_processor::RedoCmd", "redo 2 redo");
 }
 
 void test_undo_pre() {

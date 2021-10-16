@@ -17,6 +17,11 @@
 #include <list>
 #include <vector>
 
+#include <limits.h> // SIZE_T_MAX
+#if defined(_MSC_VER)
+#define SIZE_T_MAX ULONG_MAX
+#endif
+
 // forward ref --------------------
 namespace undo_cxx {
 
@@ -357,14 +362,14 @@ namespace undo_cxx {
     public:
         void invoke(CmdSP &cmd) {
             cmd->execute(cmd, _ctx);
-            if constexpr (has_can_be_memento<CmdT>::value) {
-                if (cmd->can_be_memento())
-                    save(cmd);
-            }
+            // if constexpr (has_can_be_memento<CmdSP>::value) {
+            if (cmd->can_be_memento())
+                save(cmd);
+            // }
         }
         void undo(CmdSP &undo_cmd) {
             if constexpr (has_undo<CmdT>::value) {
-                // void undo(sender, ctx, delta)
+                // needs void undo_cmd::undo(sender, ctx, delta)
                 undo_cmd->undo(undo_cmd, _ctx, 1);
                 return;
             }
@@ -375,7 +380,7 @@ namespace undo_cxx {
         }
         void redo(CmdSP &redo_cmd) {
             if constexpr (has_redo<CmdT>::value) {
-                // void redo(sender, ctx, delta)
+                // needs void redo_cmd::redo(sender, ctx, delta)
                 redo_cmd->redo(redo_cmd, _ctx, 1);
                 return;
             }
@@ -387,7 +392,7 @@ namespace undo_cxx {
 
         void undo(CmdSP &undo_cmd, int delta) {
             if constexpr (has_undo<CmdT>::value) {
-                // void undo(sender, ctx, delta)
+                // needs void undo_cmd::undo(sender, ctx, delta)
                 undo_cmd->undo(undo_cmd, _ctx, delta);
                 return;
             }
@@ -404,7 +409,7 @@ namespace undo_cxx {
         }
         void redo(CmdSP redo_cmd, int delta) {
             if constexpr (has_redo<CmdT>::value) {
-                // void redo(sender, ctx, delta)
+                // needs void redo_cmd::redo(sender, ctx, delta)
                 redo_cmd->redo(redo_cmd, _ctx, delta);
                 return;
             }
@@ -431,6 +436,15 @@ namespace undo_cxx {
         bool can_undo() const { return can_restore(); }
         bool can_redo() const { return can_replay(); }
 
+        size_type max_size() const { return _max_size; }
+        void max_size(size_type max_value) {
+            _max_size = max_value;
+            if constexpr (undo_cxx::traits::has_max_size_set_v<Container>) {
+                // if `void stack::max_size(size_t max_size_)` exists:
+                _saved_states.max_size(_max_size);
+            }
+        }
+
         void clear() {
             _saved_states.clear();
             _position = _saved_states.end();
@@ -438,11 +452,11 @@ namespace undo_cxx {
 
     private:
         void save(CmdSP &cmd) {
-            static_assert("expecting member function present: Memento Cmd::save_state()");
-            if constexpr (has_save_state<CmdT>::value) {
-                auto m = cmd->save_state(cmd);
-                push(std::move(m));
-            }
+            // std::printf("  . save memento\n");
+            // // if constexpr (has_save_state<CmdSP>::value) {
+            auto m = cmd->save_state(cmd);
+            push(std::move(m));
+            // // }
         }
         // void save(Memento &&s) { push(std::move(s)); }
         bool restore(MementoPtr &s) {
@@ -458,6 +472,14 @@ namespace undo_cxx {
                 if (_position != _saved_states.end()) {
                     // erase [_position..)
                     _saved_states.erase(_position, _saved_states.end());
+                }
+            }
+
+            if (size() >= _max_size) {
+                if constexpr (undo_cxx::traits::has_max_size_set_v<Container>) {
+                    // nothing to do here
+                } else if constexpr (undo_cxx::traits::has_pop_front_v<Container>) {
+                    _saved_states.pop_front();
                 }
             }
 
@@ -528,6 +550,7 @@ namespace undo_cxx {
             return true;
         }
 
+#if !defined(_MSC_VER) // These codes have a purpose for references
         std::optional<State> pop_orig() {
             std::optional<State> ret;
             if (_saved_states.empty()) {
@@ -546,10 +569,12 @@ namespace undo_cxx {
             return ret;
         }
         bool can_pop() const { return !empty(); }
+#endif
 
     private:
         Container _saved_states{};
         Iterator _position{_saved_states.end()};
+        size_type _max_size{SIZE_T_MAX};
         ContextT _ctx{*this};
     };
 

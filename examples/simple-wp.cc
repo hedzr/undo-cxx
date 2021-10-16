@@ -27,7 +27,6 @@
 #include <stack>
 #include <vector>
 
-
 namespace word_processor {
 
     template<typename State>
@@ -138,10 +137,14 @@ namespace word_processor {
 
         using Factory = fct::factory<M::CmdT, UndoCmdT, RedoCmdT, FontStyleCmdT>;
 
-        actions_mgr() {
-            // std::cerr << undo_cxx::debug::type_name<FontStyleCmdT>() << '\n';
-        }
+        actions_mgr() {}
         ~actions_mgr() {}
+
+        template<typename Cmd, typename... Args>
+        void invoke(Args &&...args) {
+            auto cmd = Factory::make_shared(undo_cxx::id_name<Cmd>(), args...);
+            _undoable_cmd_system.invoke(cmd);
+        }
 
         template<typename... Args>
         void invoke(char const *const cmd_id_name, Args &&...args) {
@@ -163,33 +166,51 @@ void test_undo_sys() {
     using namespace word_processor;
     actions_mgr mgr;
 
+    using State = std::string;
+    using FontStyleCmd = word_processor::FontStyleCmd<State>;
+    using UndoCmd = word_processor::UndoCmd<State>;
+    using RedoCmd = word_processor::RedoCmd<State>;
     // do some stuffs
-    UNUSED(mgr);
+
     // mgr.invoke("word_processor::FontStyleCmd<std::__1::basic_string<char> >", "italic state1");
-    mgr.invoke("word_processor::FontStyleCmd", "italic state1");
-    mgr.invoke("word_processor::FontStyleCmd", "italic-bold state2");
-    mgr.invoke("word_processor::FontStyleCmd", "underline state3");
-    mgr.invoke("word_processor::FontStyleCmd", "italic state4");
+    mgr.invoke<FontStyleCmd>("italic state1");
+    mgr.invoke<FontStyleCmd>("italic-bold state2");
+    mgr.invoke<FontStyleCmd>("underline state3");
+    mgr.invoke<FontStyleCmd>("italic state4");
 
     // and try to undo or redo
 
-    mgr.invoke("word_processor::UndoCmd", "undo 1");
-    mgr.invoke("word_processor::UndoCmd", "undo 2");
+    mgr.invoke<UndoCmd>("undo 1");
+    mgr.invoke<UndoCmd>("undo 2");
 
-    mgr.invoke("word_processor::RedoCmd", "redo 1");
+    mgr.invoke<RedoCmd>("redo 1");
 
-    mgr.invoke("word_processor::UndoCmd", "undo 3");
-    mgr.invoke("word_processor::UndoCmd", "undo 4");
+    mgr.invoke<UndoCmd>("undo 3");
+    mgr.invoke<UndoCmd>("undo 4");
+    
+    mgr.invoke("word_processor::RedoCmd", "redo 2 redo");
 }
 
 void test_undo_pre() {
+    using namespace std::string_view_literals;
     std::string_view v1{"v1"};
     std::size_t v1_hash = std::hash<std::string_view>{}(v1);
-    std::cout << v1 << ", hash = " << v1_hash << '\n';
-
+    std::cout << v1 << ", hash = "sv << v1_hash << '\n';
     using namespace undo_cxx;
-    using UndoCmd = word_processor::UndoCmd<std::string>;
+    using State = std::string;
+    // using FontStyleCmd = word_processor::FontStyleCmd<State>;
+    using UndoCmd = word_processor::UndoCmd<State>;
+    using RedoCmd = word_processor::RedoCmd<State>;
+#if !defined(_MSC_VER)
     std::cout << "id: " << id_gen<UndoCmd>{}(UndoCmd{}) << '\n';
+    std::cout << "id: " << id_name<UndoCmd>() << '\n';
+#else
+    std::cout << "detail::type_name: " << debug::detail::type_name<UndoCmd>() << '\n';
+    std::cout << "type_name        : " << debug::type_name<UndoCmd>() << '\n';
+    std::cout << "id_name          : " << id_name<UndoCmd>() << '\n';
+#endif
+    dbg_debug("OK, UndoCmd's id = %s", std::string(id_name<UndoCmd>()).c_str());
+    dbg_debug("OK, RedoCmd's id = %s", std::string(id_name<RedoCmd>()).c_str());
 }
 
 int main() {

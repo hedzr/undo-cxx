@@ -36,6 +36,7 @@ dist-.+/
 # libs?/
 docs/cmake-vars.txt
 b.sh
+build.sh
 _assets/
 sftp-config(-alt\\d?)?\\.json
 \\.sublime-(project|workspace)

@@ -47,7 +47,7 @@ define_cxx_project(${PROJECT_NAME} ${PROJECT_MACRO_PREFIX})
 
 #### TESTS ##################################################
 
-if (${UNDO_CXX_BUILD_TESTS_EXAMPLES} OR (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR))
+if ((${UNDO_CXX_BUILD_TESTS_EXAMPLES}) OR ("${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_SOURCE_DIR}"))
     enable_testing()
     add_subdirectory(examples/)
     add_subdirectory(tests/)

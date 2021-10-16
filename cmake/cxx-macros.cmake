@@ -47,7 +47,7 @@ macro(define_cxx_project PROJ_NAME PROJ_PREFIX)
             ${PROJ_PREFIX}_ENABLE_PRECONDITION_CHECKS=${_${PROJ_NAME}_enable_precondition_checks})
     #target_link_libraries(fsm_cxx INTERFACE debug_assert)
 
-    if (MSVC)
+    if (${MSVC})
         target_compile_options(${PROJ_NAME} INTERFACE /wd4800) # truncation to bool warning
     endif ()
 
@@ -79,7 +79,7 @@ set(${PROJ_NAME}_LIBRARIES ${PROJ_NAME})
             ${CONFIG_PACKAGE_INSTALL_DIR})
 
     # Only export target when using imported targets
-    if (FSM_CXX_HAS_IMPORTED_TARGETS)
+    if (${UNDO_CXX_HAS_IMPORTED_TARGETS})
 
         install(TARGETS ${PROJ_NAME}
                 EXPORT ${PROJ_NAME}-targets

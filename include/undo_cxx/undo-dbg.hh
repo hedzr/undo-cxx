@@ -14,47 +14,113 @@
 #include <string>
 #include <vector>
 
+namespace undo_cxx {
+
+    template<std::string_view const &...Strings>
+    struct join {
+        // Join all strings into a single std::array of chars
+        static constexpr auto impl() noexcept {
+            constexpr std::size_t len = (Strings.size() + ... + 0);
+            std::array<char, len + 1> arr1{};
+            auto append = [i = 0, &arr1](auto const &s) mutable {
+                for (auto c : s) arr[i++] = c;
+            };
+            (append(Strings), ...);
+            arr1[len] = 0;
+            return arr1;
+        }
+        // Give the joined string static storage
+        static constexpr auto arr = impl();
+        // View as a std::string_view
+        static constexpr std::string_view value{arr.data(), arr.size() - 1};
+    };
+    // Helper to get the value out
+    template<std::string_view const &...Strings>
+    static constexpr auto join_v = join<Strings...>::value;
+
+} // namespace undo_cxx
 namespace undo_cxx { namespace debug {
 
-#if __cplusplus < 201402
-    template<class T>
-    std::string
-    type_name() {
-        typedef typename std::remove_reference<T>::type TR;
-        std::unique_ptr<char, void (*)(void *)> own(
-#ifndef _MSC_VER
-                abi::__cxa_demangle(typeid(TR).name(), nullptr,
-                                    nullptr, nullptr),
+#if 1
+    template<typename T>
+    constexpr std::string_view type_name();
+
+    template<>
+    constexpr std::string_view type_name<void>() { return "void"; }
+
+    namespace detail {
+
+        using type_name_prober = void;
+
+        template<typename T>
+        constexpr std::string_view wrapped_type_name() {
+#ifdef __clang__
+            return __PRETTY_FUNCTION__;
+#elif defined(__GNUC__)
+            return __PRETTY_FUNCTION__;
+#elif defined(_MSC_VER)
+            return __FUNCSIG__;
 #else
-                nullptr,
+#error "Unsupported compiler"
 #endif
-                std::free);
-        std::string r = own != nullptr ? own.get() : typeid(TR).name();
-        if (std::is_const<TR>::value)
-            r += " const";
-        if (std::is_volatile<TR>::value)
-            r += " volatile";
-        if (std::is_lvalue_reference<T>::value)
-            r += "&";
-        else if (std::is_rvalue_reference<T>::value)
-            r += "&&";
-#ifndef _MSC_VER
-        return r;
-#else
-        const char *const pr1 = "struct ";
+        }
+
+        constexpr std::size_t wrapped_type_name_prefix_length() {
+            return wrapped_type_name<type_name_prober>().find(type_name<type_name_prober>());
+        }
+
+        constexpr std::size_t wrapped_type_name_suffix_length() {
+            return wrapped_type_name<type_name_prober>().length() - wrapped_type_name_prefix_length() - type_name<type_name_prober>().length();
+        }
+
+        template<typename T>
+        constexpr std::string_view type_name() {
+            constexpr auto wrapped_name = wrapped_type_name<T>();
+            constexpr auto prefix_length = wrapped_type_name_prefix_length();
+            constexpr auto suffix_length = wrapped_type_name_suffix_length();
+            constexpr auto type_name_length = wrapped_name.length() - prefix_length - suffix_length;
+            return wrapped_name.substr(prefix_length, type_name_length);
+        }
+
+    } // namespace detail
+
+    /**
+     * @brief return the literal of a datatype in constexpr.
+     * @tparam T the datatype
+     * @return std::string_view
+     * @note the returning string is a string_view, make a copy before print it:
+     * 
+     * 1. use std::ostream directly:
+     * @code{c++}
+     * std::cout << undo_cxx::debug::type_name&lt;std::string>() << '\n';
+     * @endcode
+     * 
+     * 2. wrap the string_view into a std::string:
+     * @code{c++}
+     * std::cout &lt;&lt; std::string(undo_cxx::debug::type_name&lt;std::string>()) &lt;&lt; '\n';
+     * printf(">>> %s\n", std::string(undo_cxx::debug::type_name&lt;std::string>()).c_str());
+     * @endcode
+     * 
+     */
+    template<typename T>
+    constexpr std::string_view type_name() {
+        constexpr auto r = detail::type_name<T>();
+
+        using namespace std::string_view_literals;
+        constexpr auto pr1 = "struct "sv;
         auto ps1 = r.find(pr1);
-        auto st1 = (ps1 != std::string::npos ? ps1 + sizeof(pr1) - 1 : 0);
+        auto st1 = (ps1 == 0 ? pr1.length() : 0);
         auto name1 = r.substr(st1);
-        const char *const pr2 = "class ";
+        constexpr auto pr2 = "class "sv;
         auto ps2 = name1.find(pr2);
-        auto st2 = (ps2 != std::string::npos ? ps2 + sizeof(pr2) - 1 : 0);
+        auto st2 = (ps2 == 0 ? pr2.length() : 0);
         auto name2 = name1.substr(st2);
-        const char *const pr3 = "union ";
+        constexpr auto pr3 = "union "sv;
         auto ps3 = name2.find(pr3);
-        auto st3 = (ps3 != std::string::npos ? ps3 + sizeof(pr3) - 1 : 0);
+        auto st3 = (ps3 == 0 ? pr3.length() : 0);
         auto name3 = name2.substr(st3);
+
         return name3;
-#endif
     }
 
     /**
@@ -64,8 +130,64 @@ namespace undo_cxx { namespace debug {
      */
     template<typename T>
     constexpr auto short_type_name() -> std::string_view {
-        const auto value = type_name<T>();
-        const auto end = value.rfind("::");
+        constexpr auto &value = type_name<T>();
+        constexpr auto end = value.rfind("::");
+        return std::string_view{value.data() + (end != std::string_view::npos ? end + 2 : 0)};
+    }
+
+#else
+#if __cplusplus < 201402
+    template<class T>
+    constexpr std::string_view
+    type_name() {
+        using namespace std::string_view_literals;
+        typedef typename std::remove_reference<T>::type TR;
+        std::unique_ptr<char, void (*)(void *)> own(
+#ifndef _MSC_VER
+                abi::__cxa_demangle(typeid(TR).name(), nullptr,
+                                    nullptr, nullptr),
+#else
+                nullptr,
+#endif
+                std::free);
+        std::string_view const r = own != nullptr ? own.get() : typeid(TR).name();
+        if (std::is_const<TR>::value)
+            r = join_v<r, " const"sv>;
+        if (std::is_volatile<TR>::value)
+            r = join_v<r, " volatile"sv>;
+        if (std::is_lvalue_reference<T>::value)
+            r = join_v<r, "&"sv>;
+        else if (std::is_rvalue_reference<T>::value)
+            r = join_v<r, "&&"sv>;
+#ifndef _MSC_VER
+        return r;
+#else
+        // const char *const pr1 = "struct ";
+        auto ps1 = r.find("struct "sv);
+        auto st1 = (ps1 != std::string_view::npos ? ps1 + sizeof(pr1) - 1 : 0);
+        auto name1 = r.substr(st1);
+        // const char *const pr2 = "class ";
+        auto ps2 = name1.find("class "sv);
+        auto st2 = (ps2 != std::string_view::npos ? ps2 + sizeof(pr2) - 1 : 0);
+        auto name2 = name1.substr(st2);
+        // const char *const pr3 = "union ";
+        auto ps3 = name2.find("union "sv);
+        auto st3 = (ps3 != std::string_view::npos ? ps3 + sizeof(pr3) - 1 : 0);
+        auto name3 = name2.substr(st3);
+        return name3;
+#endif
+    }
+
+    /**
+     * @brief remove the scoped prefix (before '::')
+     * @tparam T 
+     * @return 
+     * @note it's not work for msvc yet :(
+     */
+    template<typename T>
+    constexpr auto short_type_name() -> std::string_view {
+        constexpr auto value = type_name<T>();
+        constexpr auto end = value.rfind("::");
         return std::string_view{value.data() + (end != std::string_view::npos ? end + 2 : 0)};
     }
 
@@ -161,13 +283,13 @@ namespace undo_cxx { namespace debug {
      * 
      * 1. use std::ostream directly:
      * @code{c++}
-     * std::cout << hicc::debug::type_name&lt;std::string>() << '\n';
+     * std::cout << undo_cxx::debug::type_name&lt;std::string>() << '\n';
      * @endcode
      * 
      * 2. wrap the string_view into a std::string:
      * @code{c++}
-     * std::cout &lt;&lt; std::string(hicc::debug::type_name&lt;std::string>()) &lt;&lt; '\n';
-     * printf(">>> %s\n", std::string(hicc::debug::type_name&lt;std::string>()).c_str());
+     * std::cout &lt;&lt; std::string(undo_cxx::debug::type_name&lt;std::string>()) &lt;&lt; '\n';
+     * printf(">>> %s\n", std::string(undo_cxx::debug::type_name&lt;std::string>()).c_str());
      * @endcode
      * 
      */
@@ -191,7 +313,7 @@ namespace undo_cxx { namespace debug {
 
     // https://bitwizeshift.github.io/posts/2021/03/09/getting-an-unmangled-type-name-at-compile-time/
 #endif
-
+#endif // 1 or 0
 
     // to detect the type of a lambda function, following:
     //   https://stackoverflow.com/a/7943736/6375060

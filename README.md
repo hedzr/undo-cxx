@@ -46,7 +46,7 @@ namespace dp { namespace undo { namespace test {
             // current selection in current editor ...
             std::cout << "<<" << _info << ">>" << '\n';
         }
-        MementoPtr save_state_impl(CmdSP &sender) override {
+        MementoPtr save_state_impl(CmdSP &sender, ContextT &) override {
             return std::make_unique<Memento>(sender, _info);
         }
         void undo_impl(CmdSP &sender, ContextT &, Memento &memento) override {
@@ -66,7 +66,7 @@ namespace dp { namespace undo { namespace test {
     class UndoCmd : public undo_cxx::base_undo_cmd_t<State> {
     public:
         ~UndoCmd() {}
-        UndoCmd() {}
+        using undo_cxx::base_undo_cmd_t<State>::base_undo_cmd_t;
         UndoCmd(std::string const &default_state_info)
             : _info(default_state_info) {}
         UNDO_CXX_DEFINE_DEFAULT_CMD_TYPES(UndoCmd, undo_cxx::base_undo_cmd_t);
@@ -76,7 +76,7 @@ namespace dp { namespace undo { namespace test {
             std::cout << "<<" << _info << ">>" << '\n';
             Base::do_execute(sender, ctx);
         }
-        MementoPtr save_state_impl(CmdSP &sender) override {
+        MementoPtr save_state_impl(CmdSP &sender, ContextT &) override {
             return std::make_unique<Memento>(sender, _info);
         }
         void undo_impl(CmdSP &sender, ContextT &, Memento &memento) override {
@@ -97,7 +97,7 @@ namespace dp { namespace undo { namespace test {
     class RedoCmd : public undo_cxx::base_redo_cmd_t<State> {
     public:
         ~RedoCmd() {}
-        RedoCmd() {}
+        using undo_cxx::base_redo_cmd_t<State>::base_redo_cmd_t;
         RedoCmd(std::string const &default_state_info)
             : _info(default_state_info) {}
         UNDO_CXX_DEFINE_DEFAULT_CMD_TYPES(RedoCmd, undo_cxx::base_redo_cmd_t);
@@ -107,7 +107,7 @@ namespace dp { namespace undo { namespace test {
             std::cout << "<<" << _info << ">>" << '\n';
             Base::do_execute(sender, ctx);
         }
-        MementoPtr save_state_impl(CmdSP &sender) override {
+        MementoPtr save_state_impl(CmdSP &sender, ContextT &) override {
             return std::make_unique<Memento>(sender, _info);
         }
         void undo_impl(CmdSP &sender, ContextT &, Memento &memento) override {

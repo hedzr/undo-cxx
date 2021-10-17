@@ -83,6 +83,7 @@ define_test_program(detects detects.cc)
 define_test_program(lambda lambda.cc)
 define_test_program(partial-curry partial-curry.cc)
 define_test_program(type-name type-name.cc)
+define_test_program(factory factory.cc)
 
 define_test_program(basic basic.cc)
 define_test_program(undo undo.cc)

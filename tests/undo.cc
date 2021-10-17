@@ -39,7 +39,7 @@ namespace dp { namespace undo { namespace test {
             // current selection in current editor ...
             std::cout << "<<" << _info << ">>" << '\n';
         }
-        MementoPtr save_state_impl(CmdSP &sender) override {
+        MementoPtr save_state_impl(CmdSP &sender, ContextT &) override {
             return std::make_unique<Memento>(sender, _info);
         }
         void undo_impl(CmdSP &sender, ContextT &, Memento &memento) override {
@@ -69,7 +69,7 @@ namespace dp { namespace undo { namespace test {
             std::cout << "<<" << _info << ">>" << '\n';
             Base::do_execute(sender, ctx);
         }
-        MementoPtr save_state_impl(CmdSP &sender) override {
+        MementoPtr save_state_impl(CmdSP &sender, ContextT &) override {
             return std::make_unique<Memento>(sender, _info);
         }
         void undo_impl(CmdSP &sender, ContextT &, Memento &memento) override {
@@ -100,7 +100,7 @@ namespace dp { namespace undo { namespace test {
             std::cout << "<<" << _info << ">>" << '\n';
             Base::do_execute(sender, ctx);
         }
-        MementoPtr save_state_impl(CmdSP &sender) override {
+        MementoPtr save_state_impl(CmdSP &sender, ContextT &) override {
             return std::make_unique<Memento>(sender, _info);
         }
         void undo_impl(CmdSP &sender, ContextT &, Memento &memento) override {

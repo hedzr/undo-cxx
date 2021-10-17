@@ -44,9 +44,10 @@ namespace undo_cxx {
                 // typedef typename std::underlying_type<T>::type type;
                 constexpr id_type v = debug::type_name<T>();
                 constexpr auto end = v.find('<');
-                if (end != v.npos)
-                    return v.substr(0, end);
-                return v;
+                // if (end != v.npos)
+                //     return v.substr(0, end);
+                // return v;
+                return (end != v.npos) ? v.substr(0, end) : v;
             }
         };
     } // namespace detail
@@ -58,8 +59,10 @@ namespace undo_cxx {
     template<typename T>
     constexpr auto id_name() -> id_type {
         constexpr id_type v = debug::type_name<T>();
+        constexpr auto begin = v.find("()::");
         constexpr auto end = v.find('<');
-        return (end != v.npos) ? v.substr(0, end) : v;
+        constexpr auto begin1 = begin != v.npos ? begin + 4 : 0;
+        return v.substr(begin1, (end != v.npos ? end : v.length()) - begin1);
     }
 
 } // namespace undo_cxx
@@ -70,12 +73,10 @@ namespace undo_cxx {
 namespace undo_cxx::util::factory {
 
     /**
-     * @brief a factory template class
-     * @tparam unique 
-     * @tparam product_base 
-     * @tparam products 
-     * @see https://hedzr.com/c++/algorithm/cxx17-factory-pattern/
-     */
+       * @brief a factory template class
+       * @tparam product_base   such as `Shape`
+       * @tparam products       such as `Rect`, `Ellipse`, ...
+       */
     template<typename product_base, typename... products>
     class factory final {
     public:
@@ -84,8 +85,8 @@ namespace undo_cxx::util::factory {
         template<typename T>
         struct clz_name_t {
             string id = id_name<T>();
-            typedef T type;
-            typedef product_base base_type;
+            using type = T;
+            using base_type = product_base;
             static void static_check() {
                 static_assert(std::is_base_of<product_base, T>::value, "all products must inherit from product_base");
             }
@@ -93,22 +94,22 @@ namespace undo_cxx::util::factory {
             std::unique_ptr<base_type> gen(Args &&...args) const {
                 return std::make_unique<T>(args...);
             }
-            T data;
+            // T data;
         };
         using named_products = std::tuple<clz_name_t<products>...>;
         // using _T = typename std::conditional<unique, std::unique_ptr<product_base>, std::shared_ptr<product_base>>::type;
+        factory() {
+            std::apply([](auto &&...it) {
+                ((it.static_check() /*static_check<decltype(it.data)>()*/), ...);
+            },
+                       named_products{});
+        }
 
         template<typename... Args>
         static auto create(string const &id, Args &&...args) {
             std::unique_ptr<product_base> result{};
-
-            // std::apply([](auto &&...it) {
-            //     ((it.static_check()/*static_check<decltype(it.data)>()*/), ...);
-            // },
-            //            named_products{});
-
             std::apply([&](auto &&...it) {
-                ((it.id == id ? result = (it.static_check(), it.gen(args...)) /*std::make_unique<decltype(it.data)>(args...)*/ : result), ...);
+                ((it.id == id ? result = it.gen(args...) : result), ...);
             },
                        named_products{});
             return result;

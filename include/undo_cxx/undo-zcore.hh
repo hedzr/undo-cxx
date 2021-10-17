@@ -165,14 +165,14 @@ namespace undo_cxx {
         using StateUniPtr = std::unique_ptr<StateT>;
         using Memento = state_t<StateT>;
         using MementoPtr = typename std::unique_ptr<Memento>;
-        MementoPtr save_state(CmdSP &sender) { return save_state_impl(sender); }
+        MementoPtr save_state(CmdSP &sender, ContextT &ctx) { return save_state_impl(sender, ctx); }
         void undo(CmdSP &sender, ContextT &ctx, Memento &memento) { undo_impl(sender, ctx, memento); }
         void redo(CmdSP &sender, ContextT &ctx, Memento &memento) { redo_impl(sender, ctx, memento); }
         virtual bool can_be_memento() const { return true; }
 
     protected:
         virtual void do_execute(CmdSP &sender, ContextT &ctx) = 0;
-        virtual MementoPtr save_state_impl(CmdSP &sender) = 0;
+        virtual MementoPtr save_state_impl(CmdSP &sender, ContextT &ctx) = 0;
         virtual void undo_impl(CmdSP &sender, ContextT &ctx, Memento &memento) = 0;
         virtual void redo_impl(CmdSP &sender, ContextT &ctx, Memento &memento) = 0;
     };
@@ -228,20 +228,20 @@ namespace undo_cxx {
         }
 
     protected:
-        void do_execute(CmdSP &sender, ContextT &ctx) override {
+        virtual void do_execute(CmdSP &sender, ContextT &ctx) override {
             UNUSED(sender);
             for_each([&](CmdSP &cmd) {
                 cmd->do_execute(ctx);
             });
         }
-        MementoPtr save_state_impl(CmdSP &sender) override {
+        virtual MementoPtr save_state_impl(CmdSP &sender, ContextT &) override {
             MementoPtr r = std::make_unique<Memento>(this, StateT{});
             for_each([sender, r, this](CmdSP &cmd) {
                 r->emplace_back(cmd, cmd->save_state_impl(sender));
             });
             return r;
         }
-        void undo_impl(CmdSP &sender, ContextT &ctx, Memento &memento) override {
+        virtual void undo_impl(CmdSP &sender, ContextT &ctx, Memento &memento) override {
             UNUSED(memento);
             if (memento.command().get() == this) {
                 // composite memento (state_t):
@@ -254,7 +254,7 @@ namespace undo_cxx {
                 });
             }
         }
-        void redo_impl(CmdSP &sender, ContextT &ctx, Memento &memento) override {
+        virtual void redo_impl(CmdSP &sender, ContextT &ctx, Memento &memento) override {
             UNUSED(memento);
             if (memento.command() == this) {
                 // composie memento (state_t):
@@ -283,9 +283,17 @@ namespace undo_cxx {
     class base_undo_redo_base_cmd_t : public RefCmdT<State, BaseCmdT> {
     public:
         ~base_undo_redo_base_cmd_t() {}
+        base_undo_redo_base_cmd_t(int delta_ = 1)
+            : _delta(delta_) {}
 
         /** @brief don't record this command into the undo/redo history */
-        bool can_be_memento() const override { return false; }
+        virtual bool can_be_memento() const override { return false; }
+
+        int delta() const { return _delta; }
+        void delta(int n) { _delta = n; }
+
+    protected:
+        int _delta{1};
     };
 
     /** @brief your UndoCmd should be derived from base_undo_cmd_t */
@@ -293,11 +301,12 @@ namespace undo_cxx {
              template<class S, class B> typename RefCmdT = cmd_t>
     class base_undo_cmd_t : public base_undo_redo_base_cmd_t<State, BaseCmdT, RefCmdT> {
     public:
+        using base_undo_redo_base_cmd_t<State, BaseCmdT, RefCmdT>::base_undo_redo_base_cmd_t;
         ~base_undo_cmd_t() {}
         UNDO_CXX_DEFINE_DEFAULT_CMD_TYPES(base_undo_cmd_t, base_undo_redo_base_cmd_t);
 
     protected:
-        void do_execute(CmdSP &sender, ContextT &ctx) override;
+        virtual void do_execute(CmdSP &sender, ContextT &ctx) override;
     };
 
     /** @brief your RedoCmd should be derived from base_redo_cmd_t */
@@ -305,11 +314,12 @@ namespace undo_cxx {
              template<class S, class B> typename RefCmdT = cmd_t>
     class base_redo_cmd_t : public base_undo_redo_base_cmd_t<State, BaseCmdT, RefCmdT> {
     public:
+        using base_undo_redo_base_cmd_t<State, BaseCmdT, RefCmdT>::base_undo_redo_base_cmd_t;
         ~base_redo_cmd_t() {}
         UNDO_CXX_DEFINE_DEFAULT_CMD_TYPES(base_redo_cmd_t, base_undo_redo_base_cmd_t);
 
     protected:
-        void do_execute(CmdSP &sender, ContextT &ctx) override;
+        virtual void do_execute(CmdSP &sender, ContextT &ctx) override;
     };
 
 } // namespace undo_cxx
@@ -403,7 +413,7 @@ namespace undo_cxx {
 
             int pos = (int) position();
             int pos_new = pos - delta;
-            if (pos_new > 0 && pos_new <= size()) {
+            if (pos_new > 0 && (size_type) pos_new <= size()) {
                 Iterator it = _position;
                 std::advance(it, -delta);
                 for (int i = 0; i < delta; i++) {
@@ -420,11 +430,22 @@ namespace undo_cxx {
 
             int pos = (int) position();
             int pos_new = pos + delta;
-            if (pos_new > 0 && pos_new <= size()) {
+            if (pos_new > 0 && (size_type) pos_new <= size()) {
                 Iterator it = _position;
                 std::advance(it, delta);
                 for (int i = 0; i < delta; i++) {
                     redo(redo_cmd);
+                }
+            }
+        }
+
+        void erase(int n = 1) {
+            while (n-- && !empty()) {
+                Iterator it = _position;
+                if (it != _saved_states.end()) {
+                    _position--;
+                    _saved_states.erase(it);
+                    _position++;
                 }
             }
         }
@@ -458,7 +479,7 @@ namespace undo_cxx {
         void save(CmdSP &cmd) {
             // std::printf("  . save memento\n");
             // // if constexpr (has_save_state<CmdSP>::value) {
-            auto m = cmd->save_state(cmd);
+            auto m = cmd->save_state(cmd, _ctx);
             push(std::move(m));
             // // }
         }
@@ -593,14 +614,14 @@ namespace undo_cxx {
             do_execute(CmdSP &sender, ContextT &ctx) {
         // auto cmd = ctx.mgr.create(Self::id(), "");
         // ctx.mgr.undo(cmd);
-        ctx.mgr.undo(sender);
+        ctx.mgr.undo(sender, Base::_delta);
     }
 
     template<typename State, typename BaseCmdT,
              template<class S, class B> typename RefCmdT>
     inline void base_redo_cmd_t<State, BaseCmdT, RefCmdT>::
             do_execute(CmdSP &sender, ContextT &ctx) {
-        ctx.mgr.redo(sender);
+        ctx.mgr.redo(sender, Base::_delta);
     }
 
 } // namespace undo_cxx

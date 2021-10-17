@@ -45,7 +45,7 @@ namespace word_processor {
             // current selection in current editor ...
             std::cout << "<<" << _info << ">>" << '\n';
         }
-        MementoPtr save_state_impl(CmdSP &sender) override {
+        MementoPtr save_state_impl(CmdSP &sender, ContextT &) override {
             return std::make_unique<Memento>(sender, _info);
         }
         void undo_impl(CmdSP &sender, ContextT &, Memento &memento) override {
@@ -65,7 +65,7 @@ namespace word_processor {
     class UndoCmd : public undo_cxx::base_undo_cmd_t<State> {
     public:
         ~UndoCmd() {}
-        UndoCmd() {}
+        using undo_cxx::base_undo_cmd_t<State>::base_undo_cmd_t;
         explicit UndoCmd(std::string const &default_state_info)
             : _info(default_state_info) {}
         UNDO_CXX_DEFINE_DEFAULT_CMD_TYPES(UndoCmd, undo_cxx::base_undo_cmd_t);
@@ -75,7 +75,7 @@ namespace word_processor {
             std::cout << "<<" << _info << ">>" << '\n';
             Base::do_execute(sender, ctx);
         }
-        MementoPtr save_state_impl(CmdSP &sender) override {
+        MementoPtr save_state_impl(CmdSP &sender, ContextT &) override {
             return std::make_unique<Memento>(sender, _info);
         }
         void undo_impl(CmdSP &sender, ContextT &, Memento &memento) override {
@@ -96,7 +96,7 @@ namespace word_processor {
     class RedoCmd : public undo_cxx::base_redo_cmd_t<State> {
     public:
         ~RedoCmd() {}
-        RedoCmd() {}
+        using undo_cxx::base_redo_cmd_t<State>::base_redo_cmd_t;
         explicit RedoCmd(std::string const &default_state_info)
             : _info(default_state_info) {}
         UNDO_CXX_DEFINE_DEFAULT_CMD_TYPES(RedoCmd, undo_cxx::base_redo_cmd_t);
@@ -106,7 +106,7 @@ namespace word_processor {
             std::cout << "<<" << _info << ">>" << '\n';
             Base::do_execute(sender, ctx);
         }
-        MementoPtr save_state_impl(CmdSP &sender) override {
+        MementoPtr save_state_impl(CmdSP &sender, ContextT &) override {
             return std::make_unique<Memento>(sender, _info);
         }
         void undo_impl(CmdSP &sender, ContextT &, Memento &memento) override {
@@ -167,10 +167,10 @@ void test_undo_sys() {
     using namespace word_processor;
     actions_controller controller;
 
-    using State = std::string;
-    using FontStyleCmd = word_processor::FontStyleCmd<State>;
-    using UndoCmd = word_processor::UndoCmd<State>;
-    using RedoCmd = word_processor::RedoCmd<State>;
+    using FontStyleCmd = actions_controller::FontStyleCmdT;
+    using UndoCmd = actions_controller::UndoCmdT;
+    using RedoCmd = actions_controller::RedoCmdT;
+    
     // do some stuffs
 
     // controller.invoke("word_processor::FontStyleCmd<std::__1::basic_string<char> >", "italic state1");

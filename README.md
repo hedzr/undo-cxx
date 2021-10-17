@@ -4,14 +4,16 @@
 ![CMake Build Matrix](https://github.com/hedzr/undo-cxx/workflows/CMake%20Build%20Matrix/badge.svg?event=release) 
 --> [![GitHub tag (latest SemVer)](https://img.shields.io/github/tag/hedzr/undo-cxx.svg?label=release)](https://github.com/hedzr/undo-cxx/releases)
 
-`undo-cxx` C++17 library provides a non-linear undo/redo subsystem.
+`undo-cxx` C++17 library provides a undo/redo subsystem (linear or restricted non-linear).
 
 **WIP**
 
 ## Features
 
 - Highly configurable/customizable
-- Undo/Redo subsystem (linear or non-linear)
+- Undo/Redo subsystem
+  - restricted non-linear undo (batch undo+erase+redo)
+  - todo: full-functional non-linear
 - Bundled with Command subsystem
   - undoable/redoable
   - Composite command (`undo_cxx::composite_cmd_t<>`): composite multi-commands as one (groupable)

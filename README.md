@@ -14,7 +14,7 @@
 - Undo/Redo subsystem
   - restricted non-linear undo (batch undo+erase+redo)
   - todo: full-functional non-linear
-  - limitless undo/redo level, or limited with `max_size(n)`
+  - limitless undo/redo levels, or limited with `max_size(n)`
 - Bundled with Command subsystem
   - undoable/redoable
   - Composite command (`undo_cxx::composite_cmd_t<>`): composite multi-commands as one (groupable)

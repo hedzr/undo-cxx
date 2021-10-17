@@ -205,10 +205,12 @@ void test_undo_pre() {
 #if !defined(_MSC_VER)
     std::cout << "id: " << id_gen<UndoCmd>{}(UndoCmd{}) << '\n';
     std::cout << "id: " << id_name<UndoCmd>() << '\n';
+    std::cout << "id: " << id_name<RedoCmd>() << '\n';
 #else
     std::cout << "detail::type_name: " << debug::detail::type_name<UndoCmd>() << '\n';
     std::cout << "type_name        : " << debug::type_name<UndoCmd>() << '\n';
     std::cout << "id_name          : " << id_name<UndoCmd>() << '\n';
+    std::cout << "id_name          : " << id_name<RedoCmd>() << '\n';
 #endif
     dbg_debug("OK, UndoCmd's id = %s", std::string(id_name<UndoCmd>()).c_str());
     dbg_debug("OK, RedoCmd's id = %s", std::string(id_name<RedoCmd>()).c_str());

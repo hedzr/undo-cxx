@@ -18,7 +18,7 @@
 #include <vector>
 
 #include <limits.h> // SIZE_T_MAX
-#if defined(_MSC_VER)
+#if !defined(__clang__)
 #define SIZE_T_MAX ULONG_MAX
 #endif
 
@@ -535,7 +535,7 @@ namespace undo_cxx {
             it--;
             _position = it;
 
-            dbg_print("  . restore memento state at position #%d: %s, size=%d", position(), undo_cxx::to_string(*_position).c_str(), size());
+            dbg_print("  . restore memento state at position #%d: %s, size=%d", position(), undo_cxx::to_string(**_position).c_str(), size());
             return true;
         }
         bool pop_old(MementoPtr &s) {

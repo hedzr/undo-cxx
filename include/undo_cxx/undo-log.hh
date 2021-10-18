@@ -145,12 +145,15 @@ namespace undo_cxx::log {
     // Logger log;
 } // namespace undo_cxx::log
 
+#if !defined(dbg_print)
 #if defined(_MSC_VER)
 #define dbg_print(...) undo_cxx::log::holder(__FILE__, __LINE__, __FUNCSIG__)(__VA_ARGS__)
 #else
 #define dbg_print(...) undo_cxx::log::holder(__FILE__, __LINE__, __PRETTY_FUNCTION__)(__VA_ARGS__)
 #endif
+#endif // !defined(dbg_print)
 
+#if !defined(dbg_debug)
 #if defined(_DEBUG)
 #if defined(_MSC_VER)
 #define dbg_debug(...) undo_cxx::log::holder(__FILE__, __LINE__, __FUNCSIG__)(__VA_ARGS__)
@@ -169,8 +172,10 @@ namespace undo_cxx::log {
     _Pragma("GCC diagnostic pop")
 #endif
 #endif
+#endif // !defined(dbg_debug)
 
 #if defined(UNDO_CXX_ENABLE_VERBOSE_LOG)
+#if !defined(dbg_verbose_debug)
 // inline void debug(char const *fmt, ...) {
 //     va_list va;
 //     va_start(va, fmt);
@@ -194,6 +199,9 @@ namespace undo_cxx::log {
 template<typename... Args>
 inline void dbg_verbose_debug([[maybe_unused]] Args &&...args) { (void) (sizeof...(args)); }
 #endif
+#endif //!defined(dbg_verbose_debug)
+#if !defined(dbg_trace)
 #define dbg_trace dbg_verbose_debug
+#endif // !defined(dbg_trace)
 
 #endif //UNDO_CXX_UNDO_LOG_HH

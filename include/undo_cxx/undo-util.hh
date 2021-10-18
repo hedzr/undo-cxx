@@ -22,6 +22,22 @@
 #include <memory>
 
 
+#ifndef CLAZZ_NON_COPYABLE
+#define CLAZZ_NON_COPYABLE(clz)           \
+    clz(const clz &) = delete;            \
+    clz(clz &&) noexcept = delete;        \
+    clz &operator=(const clz &) = delete; \
+    clz &operator=(clz &&) noexcept = delete
+#endif
+
+#ifndef CLAZZ_NON_MOVEABLE
+#define CLAZZ_NON_MOVEABLE(clz)    \
+    clz(clz &&) noexcept = delete; \
+    clz &operator=(clz &&) noexcept = delete
+#endif
+
+
+
 #if !defined(__ID_SYSTEM_DEFINED)
 #define __ID_SYSTEM_DEFINED
 #include <string_view>

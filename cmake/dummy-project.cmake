@@ -4,7 +4,9 @@
 # CPU bits
 #
 
-project(dummy)
+project(dummy
+        DESCRIPTION "dummy-project for sizeof_void_p detection and more."
+        LANGUAGES CXX)
 if (${CMAKE_SIZEOF_VOID_P} EQUAL 8)
     # 64 bits
     set(CPU_ARCH "x64" CACHE STRING "ARCH x86_64" FORCE)

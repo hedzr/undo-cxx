@@ -52,6 +52,7 @@ macro(define_cxx_project PROJ_NAME PROJ_PREFIX)
             SET(_${PROJ_NAME}_enable_precondition_checks 0)
         endif ()
     endif ()
+    message(STATUS "Config (CMAKE_BUILD_NAME): ${CMAKE_BUILD_NAME}")
 
 
     add_library(${PROJ_NAME} INTERFACE)
@@ -63,7 +64,7 @@ macro(define_cxx_project PROJ_NAME PROJ_PREFIX)
             ${PROJ_PREFIX}_ENABLE_PRECONDITION_CHECKS=${_${PROJ_NAME}_enable_precondition_checks})
     #target_link_libraries(fsm_cxx INTERFACE debug_assert)
 
-    if (${MSVC})
+    if (MSVC)
         target_compile_options(${PROJ_NAME} INTERFACE /wd4800) # truncation to bool warning
     endif ()
 
@@ -95,7 +96,7 @@ set(${PROJ_NAME}_LIBRARIES ${PROJ_NAME})
             ${CONFIG_PACKAGE_INSTALL_DIR})
 
     # Only export target when using imported targets
-    if (${UNDO_CXX_HAS_IMPORTED_TARGETS})
+    if (${${PROJ_PREFIX}_HAS_IMPORTED_TARGETS})
 
         install(TARGETS ${PROJ_NAME}
                 EXPORT ${PROJ_NAME}-targets
@@ -111,14 +112,14 @@ set(${PROJ_NAME}_LIBRARIES ${PROJ_NAME})
     # other subdirectories
     # only add if not inside add_subdirectory()
     option(${PROJ_PREFIX}_BUILD_TESTS_EXAMPLES "build test and example" OFF)
-    if (${${PROJ_PREFIX}_BUILD_TESTS_EXAMPLES} AND (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR))
+    if (${${PROJ_PREFIX}_BUILD_TESTS_EXAMPLES} OR (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR))
         enable_testing()
         add_subdirectory(examples/)
         add_subdirectory(tests/)
     endif ()
 
     option(${PROJ_PREFIX}_BUILD_DOCS "generate documentation" OFF)
-    if (${PROJ_PREFIX}_BUILD_DOCS AND (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR))
+    if (${PROJ_PREFIX}_BUILD_DOCS OR (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR))
         add_subdirectory(docs/)
     endif ()
 

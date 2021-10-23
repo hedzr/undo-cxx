@@ -25,7 +25,10 @@ option(UNDO_CXX_ENABLE_PRECONDITION_CHECKS "Enable Precondition Checks-OK" ON)
 
 #### PROJECTS ##################################################
 
-project(undo_cxx)
+project(undo_cxx
+        VERSION ${VERSION}
+        DESCRIPTION "cmdr-cxx11 is a POSIX-compliant command-line arguments parser in C++, its part of cmdr series."
+        LANGUAGES CXX)
 set(PROJECT_MACRO_PREFIX UNDO_CXX)
 set(UNDO_CXX_detail_header_files
         ${CMAKE_CURRENT_SOURCE_DIR}/include/undo_cxx/detail/undo-if.hh
@@ -45,10 +48,10 @@ set(UNDO_CXX_header_files
 define_cxx_project(${PROJECT_NAME} ${PROJECT_MACRO_PREFIX})
 
 
-#### TESTS ##################################################
-
-if ((${UNDO_CXX_BUILD_TESTS_EXAMPLES}) OR ("${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_SOURCE_DIR}"))
-    enable_testing()
-    add_subdirectory(examples/)
-    add_subdirectory(tests/)
-endif ()
+##### TESTS ##################################################
+#
+#if ((${UNDO_CXX_BUILD_TESTS_EXAMPLES}) OR ("${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_SOURCE_DIR}"))
+#    enable_testing()
+#    add_subdirectory(examples/)
+#    add_subdirectory(tests/)
+#endif ()

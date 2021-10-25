@@ -199,6 +199,10 @@ namespace undo_cxx::log {
 template<typename... Args>
 inline void dbg_verbose_debug([[maybe_unused]] Args &&...args) { (void) (sizeof...(args)); }
 #endif
+#else
+// #define dbg_verbose_debug UNUSED
+template<typename... Args>
+void dbg_verbose_debug([[maybe_unused]] Args &&...args) { (void) (sizeof...(args)); }
 #endif //!defined(dbg_verbose_debug)
 #if !defined(dbg_trace)
 #define dbg_trace dbg_verbose_debug

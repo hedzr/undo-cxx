@@ -52,6 +52,27 @@ macro(define_cxx_project PROJ_NAME PROJ_PREFIX)
             SET(_${PROJ_NAME}_enable_precondition_checks 0)
         endif ()
     endif ()
+    if (NOT DEFINED _${PROJ_NAME}_enable_thread_pool_ready_signal)
+        if (DEFINED ${PROJ_PREFIX}_ENABLE_THREAD_POOL_READY_SIGNAL)
+            SET(_${PROJ_NAME}_enable_thread_pool_ready_signal 1)
+        else ()
+            SET(_${PROJ_NAME}_enable_thread_pool_ready_signal 0)
+        endif ()
+    endif ()
+    if (NOT DEFINED _${PROJ_NAME}_enable_thread_pool_dbgout)
+        if ((DEFINED ${PROJ_PREFIX}_TEST_THREAD_POOL_DBGOUT) OR ${USE_DEBUG})
+            SET(_${PROJ_NAME}_enable_thread_pool_dbgout 1)
+        else ()
+            SET(_${PROJ_NAME}_enable_thread_pool_dbgout 0)
+        endif ()
+    endif ()
+    if (NOT DEFINED _${PROJ_NAME}_unit_test)
+        if ((DEFINED ${PROJ_PREFIX}_UNIT_TEST) OR ${USE_DEBUG})
+            SET(_${PROJ_NAME}_unit_test 1)
+        else ()
+            SET(_${PROJ_NAME}_unit_test 0)
+        endif ()
+    endif ()
     message(STATUS "Config (CMAKE_BUILD_NAME): ${CMAKE_BUILD_NAME}")
 
 
@@ -61,7 +82,11 @@ macro(define_cxx_project PROJ_NAME PROJ_PREFIX)
     target_include_directories(${PROJ_NAME} SYSTEM INTERFACE $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/include>)
     target_compile_definitions(${PROJ_NAME} INTERFACE
             ${PROJ_PREFIX}_ENABLE_ASSERTIONS=${_${PROJ_NAME}_enable_assertions}
-            ${PROJ_PREFIX}_ENABLE_PRECONDITION_CHECKS=${_${PROJ_NAME}_enable_precondition_checks})
+            ${PROJ_PREFIX}_ENABLE_PRECONDITION_CHECKS=${_${PROJ_NAME}_enable_precondition_checks}
+            ${PROJ_PREFIX}_ENABLE_THREAD_POOL_READY_SIGNAL=${_${PROJ_NAME}_enable_thread_pool_ready_signal}
+            ${PROJ_PREFIX}_TEST_THREAD_POOL_DBGOUT=${_${PROJ_NAME}_enable_thread_pool_dbgout}
+            ${PROJ_PREFIX}_UNIT_TEST=${_${PROJ_NAME}_unit_test}
+            )
     #target_link_libraries(fsm_cxx INTERFACE debug_assert)
 
     if (MSVC)

@@ -86,6 +86,8 @@ define_test_program(type-name type-name.cc)
 define_test_program(factory factory.cc)
 
 define_test_program(basic basic.cc)
+
+define_test_program(undo-basic undo-basic.cc)
 define_test_program(undo undo.cc)
 
 

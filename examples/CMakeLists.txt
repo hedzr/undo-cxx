@@ -18,8 +18,20 @@ function(define_example_app name)
         list(APPEND src_list ${f})
     endforeach ()
 
+    # ensure_options_values(${PROJECT_MACRO_NAME} ${PROJECT_MACRO_PREFIX})
+
     add_executable(${PROJECT_NAME}-${name} ${src_list})
     #target_compile_features(${PROJECT_NAME}-${name} PRIVATE cxx_std_11)
+    target_compile_definitions(${PROJECT_NAME}-${name} PRIVATE
+            ${PROJECT_MACRO_PREFIX}_ENABLE_ASSERTIONS=${_${PROJECT_MACRO_NAME}_enable_assertions}
+            ${PROJECT_MACRO_PREFIX}_ENABLE_PRECONDITION_CHECKS=${_${PROJECT_MACRO_NAME}_enable_precondition_checks}
+            ${PROJECT_MACRO_PREFIX}_ENABLE_THREAD_POOL_READY_SIGNAL=${_${PROJECT_MACRO_NAME}_enable_thread_pool_ready_signal}
+            ${PROJECT_MACRO_PREFIX}_ENABLE_VERBOSE_LOG=0         # ${_${PROJECT_MACRO_NAME}_enable_verbose_log}
+            ${PROJECT_MACRO_PREFIX}_TEST_THREAD_POOL_DBGOUT=0    # ${_${PROJECT_MACRO_NAME}_enable_thread_pool_dbgout}
+            # ${PROJECT_MACRO_PREFIX}_UNIT_TEST=${_${PROJECT_MACRO_NAME}_unit_test}
+            ${PROJECT_MACRO_PREFIX}_UNIT_TEST=0
+            UNIT_TESTING=0
+            )
     target_include_directories(${PROJECT_NAME}-${name} PRIVATE
             $<BUILD_INTERFACE:${CMAKE_GENERATED_DIR}>
             ${CMAKE_SOURCE_DIR}
@@ -40,11 +52,12 @@ function(define_example_app name)
     #            )
     if (MSVC)
         target_compile_options(${PROJECT_NAME}-${name} PRIVATE /W4 /WX /utf-8
-                /D${PROJECT_MACRO_PREFIX}_UNIT_TEST=1)
+                #/D${PROJECT_MACRO_PREFIX}_UNIT_TEST=1
+                )
     else ()
         target_compile_options(${PROJECT_NAME}-${name} PRIVATE
                 -pedantic -Wall -Wextra -Wshadow -Werror -pthread
-                -D${PROJECT_MACRO_PREFIX}_UNIT_TEST=1
+                #-D${PROJECT_MACRO_PREFIX}_UNIT_TEST=1
                 )
         if (DEBUG)
             target_compile_options(${PROJECT_NAME}-${name} PRIVATE
@@ -57,26 +70,6 @@ function(define_example_app name)
         endif ()
     endif ()
 
-    if (${ENABLE_AUTOMATE_TESTS})
-        get_property(tmp GLOBAL PROPERTY UNIT_TEST_TARGETS)
-        set(tmp ${UNIT_TEST_TARGETS} ${PROJECT_NAME}-${name})
-        set_property(GLOBAL PROPERTY UNIT_TEST_TARGETS "${tmp}")
-        message(">> add_test(${PROJECT_NAME}-${name}) ...")
-    endif ()
-
-    if (ANDROID)
-        add_test(NAME ${PROJECT_NAME}-${name}
-                WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-                COMMAND ${CMAKE_COMMAND} "-DANDROID_NDK=${ANDROID_NDK}"
-                "-DTEST_RESOURCES_DIR=${CMAKE_SOURCE_DIR}"
-                "-DTEST_RESOURCES=tests/data;tests/file_data.txt;Makefile"
-                "-DUNITTEST=${PROJECT_NAME}-${name}"
-                -P ${CMAKE_CURRENT_SOURCE_DIR}/ExecuteOnAndroid.cmake)
-    else ()
-        add_test(NAME ${PROJECT_NAME}-${name}
-                WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-                COMMAND $<TARGET_FILE:${PROJECT_NAME}-${name}>)
-    endif ()
 endfunction()
 
 define_example_app(simple-wp simple-wp.cc)

@@ -26,9 +26,8 @@ function(define_example_app name)
             ${PROJECT_MACRO_PREFIX}_ENABLE_ASSERTIONS=${_${PROJECT_MACRO_NAME}_enable_assertions}
             ${PROJECT_MACRO_PREFIX}_ENABLE_PRECONDITION_CHECKS=${_${PROJECT_MACRO_NAME}_enable_precondition_checks}
             ${PROJECT_MACRO_PREFIX}_ENABLE_THREAD_POOL_READY_SIGNAL=${_${PROJECT_MACRO_NAME}_enable_thread_pool_ready_signal}
-            ${PROJECT_MACRO_PREFIX}_ENABLE_VERBOSE_LOG=0         # ${_${PROJECT_MACRO_NAME}_enable_verbose_log}
-            ${PROJECT_MACRO_PREFIX}_TEST_THREAD_POOL_DBGOUT=0    # ${_${PROJECT_MACRO_NAME}_enable_thread_pool_dbgout}
-            # ${PROJECT_MACRO_PREFIX}_UNIT_TEST=${_${PROJECT_MACRO_NAME}_unit_test}
+            ${PROJECT_MACRO_PREFIX}_ENABLE_VERBOSE_LOG=0
+            ${PROJECT_MACRO_PREFIX}_TEST_THREAD_POOL_DBGOUT=0
             ${PROJECT_MACRO_PREFIX}_UNIT_TEST=0
             UNIT_TESTING=0
             )
@@ -56,7 +55,7 @@ function(define_example_app name)
                 )
     else ()
         target_compile_options(${PROJECT_NAME}-${name} PRIVATE
-                -pedantic -Wall -Wextra -Wshadow -Werror -pthread -Wno-macro-redefined
+                -pedantic -Wall -Wextra -Wshadow -Werror -pthread # -Wno-macro-redefined
                 #-D${PROJECT_MACRO_PREFIX}_UNIT_TEST=1
                 )
         if (DEBUG)

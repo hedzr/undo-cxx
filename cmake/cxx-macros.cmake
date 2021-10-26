@@ -93,14 +93,15 @@ macro(define_installable_cxx_library_project PROJ_NAME PROJ_PREFIX)
     #    target_compile_definitions(${PROJ_NAME} INTERFACE
     #            ${PROJ_PREFIX}_ENABLE_ASSERTIONS=${_${PROJ_NAME}_enable_assertions}
     #            ${PROJ_PREFIX}_ENABLE_PRECONDITION_CHECKS=${_${PROJ_NAME}_enable_precondition_checks})
-    target_compile_definitions(${PROJ_NAME} INTERFACE
-            ${PROJ_PREFIX}_ENABLE_ASSERTIONS=${_${PROJ_NAME}_enable_assertions}
-            ${PROJ_PREFIX}_ENABLE_PRECONDITION_CHECKS=${_${PROJ_NAME}_enable_precondition_checks}
-            ${PROJ_PREFIX}_ENABLE_THREAD_POOL_READY_SIGNAL=${_${PROJ_NAME}_enable_thread_pool_ready_signal}
-            ${PROJ_PREFIX}_ENABLE_VERBOSE_LOG=${_${PROJ_NAME}_enable_verbose_log}
-            ${PROJ_PREFIX}_TEST_THREAD_POOL_DBGOUT=${_${PROJ_NAME}_enable_thread_pool_dbgout}
-            #${PROJ_PREFIX}_UNIT_TEST=${_${PROJ_NAME}_unit_test}
-            )
+    #    target_compile_definitions(${PROJ_NAME} INTERFACE
+    #            ${PROJ_PREFIX}_ENABLE_ASSERTIONS=${_${PROJ_NAME}_enable_assertions}
+    #            ${PROJ_PREFIX}_ENABLE_PRECONDITION_CHECKS=${_${PROJ_NAME}_enable_precondition_checks}
+    #            ${PROJ_PREFIX}_ENABLE_THREAD_POOL_READY_SIGNAL=${_${PROJ_NAME}_enable_thread_pool_ready_signal}
+    #            ${PROJ_PREFIX}_ENABLE_VERBOSE_LOG=${_${PROJ_NAME}_enable_verbose_log}
+    #            ${PROJ_PREFIX}_TEST_THREAD_POOL_DBGOUT=${_${PROJ_NAME}_enable_thread_pool_dbgout}
+    #            #${PROJ_PREFIX}_UNIT_TEST=${_${PROJ_NAME}_unit_test}
+    #            V=1
+    #            )
     #    set_target_properties(${PROJ_NAME} PROPERTIES
     #            #${PROJECT_MACRO_PREFIX}_ENABLE_ASSERTIONS=${_${PROJECT_MACRO_NAME}_enable_assertions}
     #            #${PROJECT_MACRO_PREFIX}_ENABLE_PRECONDITION_CHECKS=${_${PROJECT_MACRO_NAME}_enable_precondition_checks}
@@ -116,10 +117,24 @@ macro(define_installable_cxx_library_project PROJ_NAME PROJ_PREFIX)
     if (MSVC)
         target_compile_options(${PROJ_NAME} INTERFACE /wd4800 # truncation to bool warning
                 #/D${PROJ_PREFIX}_UNIT_TEST=${_${PROJ_NAME}_unit_test}
+                #/D${PROJ_PREFIX}_ENABLE_ASSERTIONS=${_${PROJ_NAME}_enable_assertions}
+                #/D${PROJ_PREFIX}_ENABLE_PRECONDITION_CHECKS=${_${PROJ_NAME}_enable_precondition_checks}
+                #/D${PROJ_PREFIX}_ENABLE_THREAD_POOL_READY_SIGNAL=${_${PROJ_NAME}_enable_thread_pool_ready_signal}
+                #/D${PROJ_PREFIX}_ENABLE_VERBOSE_LOG=${_${PROJ_NAME}_enable_verbose_log}
+                #/D${PROJ_PREFIX}_TEST_THREAD_POOL_DBGOUT=${_${PROJ_NAME}_enable_thread_pool_dbgout}
+                #/D#${PROJ_PREFIX}_UNIT_TEST=${_${PROJ_NAME}_unit_test}
+                #/DV=1
                 )
     else ()
         target_compile_options(${PROJ_NAME} INTERFACE
                 #-D${PROJ_PREFIX}_UNIT_TEST=${_${PROJ_NAME}_unit_test}
+                #-D${PROJ_PREFIX}_ENABLE_ASSERTIONS=${_${PROJ_NAME}_enable_assertions}
+                #-D${PROJ_PREFIX}_ENABLE_PRECONDITION_CHECKS=${_${PROJ_NAME}_enable_precondition_checks}
+                #-D${PROJ_PREFIX}_ENABLE_THREAD_POOL_READY_SIGNAL=${_${PROJ_NAME}_enable_thread_pool_ready_signal}
+                #-D${PROJ_PREFIX}_ENABLE_VERBOSE_LOG=${_${PROJ_NAME}_enable_verbose_log}
+                #-D${PROJ_PREFIX}_TEST_THREAD_POOL_DBGOUT=${_${PROJ_NAME}_enable_thread_pool_dbgout}
+                #-D#${PROJ_PREFIX}_UNIT_TEST=${_${PROJ_NAME}_unit_test}
+                #-DV=1
                 )
     endif ()
 

@@ -11,6 +11,11 @@ set(CMAKE_MODULE_PATH
 include(prerequisites)
 include(dummy-project)
 
+set(PROJECT_MACRO_NAME undo_cxx)
+set(PROJECT_MACRO_SHORT_NAME undo)
+set(PROJECT_MACRO_MID_NAME undo-cxx)
+set(PROJECT_MACRO_PREFIX "UNDO_CXX")
+
 
 #### OPTIONS ##################################################
 
@@ -28,11 +33,10 @@ option(UNDO_CXX_UNIT_TEST "Enable the extra unit-tests" OFF)
 
 #### PROJECTS ##################################################
 
-project(undo_cxx
+project(${PROJECT_MACRO_NAME}
         VERSION ${VERSION}
-        DESCRIPTION "cmdr-cxx11 is a POSIX-compliant command-line arguments parser in C++, its part of cmdr series."
+        DESCRIPTION "undo-cxx is a C++17 library to provide a undo/redo subsystem (linear or restricted non-linear).."
         LANGUAGES CXX)
-set(PROJECT_MACRO_PREFIX UNDO_CXX)
 set(UNDO_CXX_detail_header_files
         ${CMAKE_CURRENT_SOURCE_DIR}/include/undo_cxx/detail/undo-if.hh
         )

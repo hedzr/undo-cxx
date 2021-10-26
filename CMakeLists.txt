@@ -26,8 +26,9 @@ option(OK "PL-OK" ON)
 
 option(UNDO_CXX_ENABLE_ASSERTIONS "Enable Assertions-OK" ON)
 option(UNDO_CXX_ENABLE_PRECONDITION_CHECKS "Enable Precondition Checks-OK" ON)
-#option(UNDO_CXX_ENABLE_THREAD_POOL_READY_SIGNAL "Enable ready signal actions in thread_pool template class" ON)
+option(DP_CXX_ENABLE_VERBOSE_LOG "Enable `dbg_verbose_debug` macro definition (TRACE MODE)" OFF)
 option(UNDO_CXX_TEST_THREAD_POOL_DBGOUT "Enable `pool_debug` macro definition" OFF)
+#option(UNDO_CXX_ENABLE_THREAD_POOL_READY_SIGNAL "Enable ready signal actions in thread_pool template class" ON)
 option(UNDO_CXX_UNIT_TEST "Enable the extra unit-tests" OFF)
 
 

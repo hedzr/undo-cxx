@@ -56,7 +56,7 @@ function(define_example_app name)
                 )
     else ()
         target_compile_options(${PROJECT_NAME}-${name} PRIVATE
-                -pedantic -Wall -Wextra -Wshadow -Werror -pthread
+                -pedantic -Wall -Wextra -Wshadow -Werror -pthread -Wno-macro-redefined
                 #-D${PROJECT_MACRO_PREFIX}_UNIT_TEST=1
                 )
         if (DEBUG)

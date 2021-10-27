@@ -6,7 +6,12 @@
 
 `undo-cxx` C++17 library provides a undo/redo subsystem (linear or restricted non-linear).
 
+## Newest
+
 **WIP**
+
+- *0.2.2*, fixes arround the project files
+- 0.2.1, first implementation of Undoable/Redoable
 
 ## Features
 

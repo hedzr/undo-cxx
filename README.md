@@ -1,7 +1,7 @@
 # undo-cxx
 
-![CMake Build Matrix](https://github.com/hedzr/undo-cxx/workflows/CMake%20Build%20Matrix/badge.svg) <!-- 
-![CMake Build Matrix](https://github.com/hedzr/undo-cxx/workflows/CMake%20Build%20Matrix/badge.svg?event=release) 
+![CMake Build Matrix](https://github.com/hedzr/undo-cxx/workflows/CMake%20Build%20Matrix/badge.svg) <!--
+![CMake Build Matrix](https://github.com/hedzr/undo-cxx/workflows/CMake%20Build%20Matrix/badge.svg?event=release)
 --> [![GitHub tag (latest SemVer)](https://img.shields.io/github/tag/hedzr/undo-cxx.svg?label=release)](https://github.com/hedzr/undo-cxx/releases)
 
 `undo-cxx` C++17 library provides a undo/redo subsystem (linear or restricted non-linear).
@@ -10,20 +10,20 @@
 
 **WIP**
 
-- *0.2.2*, fixes arround the project files
-- 0.2.1, first implementation of Undoable/Redoable
+-   _0.2.2_, fixes arround the project files
+-   0.2.1, first implementation of Undoable/Redoable
 
 ## Features
 
-- Highly configurable/customizable
-- Undo/Redo subsystem
-  - restricted non-linear undo (batch undo+erase+redo)
-  - todo: full-functional non-linear
-  - limitless undo/redo levels, or limited with `max_size(n)`
-- Bundled with Command subsystem
-  - undoable/redoable
-  - Composite command (`undo_cxx::composite_cmd_t<>`): composite multi-commands as one (groupable)
-  - Composite memento (`undo_cxx::state_t<>`) for composite-command
+-   Highly configurable/customizable
+-   Undo/Redo subsystem
+    -   restricted non-linear undo (batch undo+erase+redo)
+    -   todo: full-functional non-linear
+    -   limitless undo/redo levels, or limited with `max_size(n)`
+-   Bundled with Command subsystem
+    -   undoable/redoable
+    -   Composite command (`undo_cxx::composite_cmd_t<>`): composite multi-commands as one (groupable)
+    -   Composite memento (`undo_cxx::state_t<>`) for composite-command
 
 ---
 
@@ -165,9 +165,6 @@ int main() {
 }
 ```
 
-
-
-
 ## Build Options
 
 ### Build with CMake
@@ -195,20 +192,16 @@ cmake --install build/
 #   sudo cp -R ./install/lib/cmake/undo_cxx /usr/local/lib/cmake/
 ```
 
-
 ### Other CMake Options
 
 1. `UNDO_CXX_BUILD_TESTS_EXAMPLES`=OFF
 2. `UNDO_CXX_BUILD_DOCS`=OFF
 3. ...
 
-
 ## Thanks to JODL
 
 Thanks to [JetBrains](https://www.jetbrains.com/?from=undo-cxx) for donating product licenses to help develop **undo-cxx** [![jetbrains](https://gist.githubusercontent.com/hedzr/447849cb44138885e75fe46f1e35b4a0/raw/bedfe6923510405ade4c034c5c5085487532dee4/jetbrains-variant-4.svg)](https://www.jetbrains.com/?from=hedzr/undo-cxx)
 
-
 ## LICENSE
 
-MIT
-
+Apache 2.0

@@ -269,6 +269,7 @@ void test_detect_has() {
 int main() {
 
     test_detect_has();
+    
     test_detect_1();
     test_detect_2();
 

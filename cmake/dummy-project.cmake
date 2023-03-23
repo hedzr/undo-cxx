@@ -1,7 +1,7 @@
 
 
 #
-# CPU bits
+# check CPU bits
 #
 
 project(dummy
@@ -38,5 +38,11 @@ endif ()
 
 
 include(target-dirs)
-include(cxx-detect-compilers)
-include(version-def)
+include(cxx-detect-compilers)     # detect cxx compiler
+include(detect-systems)           # detect OS, ...
+include(cxx-macros)               # macros: define_cxx_executable_project, ...
+include(version-def)              # load .version.cmake
+include(versions-gen)             # generate config.h and version.hh
+
+# when using compiler with cmake multi-config feature, a special build type 'Asan' can be used for sanitizing test.
+enable_sanitizer_for_multi_config()

@@ -1,18 +1,7 @@
 
-macro(debug msg)
-    message(STATUS "DEBUG ${msg}")
-endmacro()
+#find_package(Threads REQUIRED)
 
-macro(debug_print_value variableName)
-    debug("${variableName}=\${${variableName}}")
-endmacro()
-
-macro(debug_print_list_value listName)
-    message(STATUS "- List of ${listName} -------------")
-    foreach (lib ${${listName}})
-        message("                         ${lib}")
-    endforeach (lib)
-endmacro()
+include(lexer-tools)
 
 macro(ensure_options_values PROJ_NAME PROJ_PREFIX)
     if (NOT DEFINED _${PROJ_NAME}_enable_assertions)
@@ -22,6 +11,7 @@ macro(ensure_options_values PROJ_NAME PROJ_PREFIX)
             SET(_${PROJ_NAME}_enable_assertions 0)
         endif ()
     endif ()
+
     if (NOT DEFINED _${PROJ_NAME}_enable_precondition_checks)
         if (DEFINED ${PROJ_PREFIX}_ENABLE_PRECONDITION_CHECKS)
             SET(_${PROJ_NAME}_enable_precondition_checks 1)
@@ -29,6 +19,7 @@ macro(ensure_options_values PROJ_NAME PROJ_PREFIX)
             SET(_${PROJ_NAME}_enable_precondition_checks 0)
         endif ()
     endif ()
+
     if (NOT DEFINED _${PROJ_NAME}_enable_thread_pool_ready_signal)
         if (DEFINED ${PROJ_PREFIX}_ENABLE_THREAD_POOL_READY_SIGNAL)
             SET(_${PROJ_NAME}_enable_thread_pool_ready_signal 1)
@@ -36,6 +27,7 @@ macro(ensure_options_values PROJ_NAME PROJ_PREFIX)
             SET(_${PROJ_NAME}_enable_thread_pool_ready_signal 0)
         endif ()
     endif ()
+
     if (NOT DEFINED _${PROJ_NAME}_enable_verbose_log)
         if (DEFINED ${PROJ_PREFIX}_ENABLE_VERBOSE_LOG)
             SET(_${PROJ_NAME}_enable_verbose_log 1)
@@ -43,6 +35,7 @@ macro(ensure_options_values PROJ_NAME PROJ_PREFIX)
             SET(_${PROJ_NAME}_enable_verbose_log 0)
         endif ()
     endif ()
+
     if (NOT DEFINED _${PROJ_NAME}_enable_thread_pool_dbgout)
         if ((DEFINED ${PROJ_PREFIX}_TEST_THREAD_POOL_DBGOUT) OR ${USE_DEBUG})
             SET(_${PROJ_NAME}_enable_thread_pool_dbgout 1)
@@ -50,6 +43,7 @@ macro(ensure_options_values PROJ_NAME PROJ_PREFIX)
             SET(_${PROJ_NAME}_enable_thread_pool_dbgout 0)
         endif ()
     endif ()
+
     if (NOT DEFINED _${PROJ_NAME}_unit_test)
         if ((DEFINED ${PROJ_PREFIX}_UNIT_TEST) OR ${USE_DEBUG})
             SET(_${PROJ_NAME}_unit_test 1)
@@ -57,197 +51,654 @@ macro(ensure_options_values PROJ_NAME PROJ_PREFIX)
             SET(_${PROJ_NAME}_unit_test 0)
         endif ()
     endif ()
-    message(STATUS "Config (CMAKE_BUILD_NAME): ${CMAKE_BUILD_NAME}")
+
+    # message(STATUS "Config (CMAKE_BUILD_NAME): ${CMAKE_BUILD_NAME}")
 endmacro()
 
-macro(define_installable_cxx_library_project PROJ_NAME PROJ_PREFIX)
-    set(_detail_header_files ${${PROJ_PREFIX}_detail_header_files})
-    set(_header_files ${${PROJ_PREFIX}_header_files})
-    debug_print_list_value(_header_files)
-    # debug_print_value(${PROJ_NAME})
+function(prepend var prefix)
+    set(listVar "")
 
-    set(CMAKE_CXX_STANDARD 17)
-    set(CMAKE_CXX_STANDARD_REQUIRED ON)
-    set(CMAKE_CXX_EXTENSIONS ON)
-    #
-    # Just for QT app ...
-    #set(CMAKE_AUTOMOC ON)    # Qt moc, meta-object compiler
-    #set(CMAKE_AUTORCC ON)    # Qt rcc, resources compiler
-    #set(CMAKE_AUTOUIC ON)    # Qt uic, User-Interface compiler
+    foreach (f ${ARGN})
+        list(APPEND listVar "${prefix}/${f}")
+    endforeach (f)
 
+    set(${var} "${listVar}" PARENT_SCOPE)
+endfunction(prepend)
 
-    ensure_options_values(${PROJ_NAME} ${PROJ_PREFIX})
-    gen_versions(${PROJ_NAME} ${PROJ_PREFIX}
-            ${PROJ_NAME}-version.hh
-            ${PROJ_NAME}-config.hh
-            ${PROJ_NAME}-${PROJECT_VERSION}
-            ${CMAKE_SOURCE_DIR}/${CMAKE_SCRIPTS}/version.h.in
-            ${CMAKE_SOURCE_DIR}/${CMAKE_SCRIPTS}/config-base.h.in
+macro(define_cxx_executable_project name)
+    set(dicep_PARAM_OPTIONS
+            INSTALL           # installable?
+            GENERATE_CONFIG   # generate config.h and version.h
+            BUILD_DOCS        # build docs with doxygen? 
+            )
+    set(dicep_PARAM_ONE_VALUE_KEYWORDS
+            PREFIX            # PROJ_PREFIX
+            CXXSTANDARD       # such as CXXSTANDARD 17
+            OPTIONS           # cxx compiler options
+            VERSION           # default is ${PROJECT_VERSION}
+            )
+    set(dicep_PARAM_MULTI_VALUE_KEYWORDS
+            HEADERS
+            DETAILED_HEADERS
+            SOURCES
+            INCLUDE_DIRECTORIES
+            LIBRARIES
+            FLEX
+            BISON
             )
 
+    cmake_parse_arguments(
+            dicep_ARG
+            "${dicep_PARAM_OPTIONS}"
+            "${dicep_PARAM_ONE_VALUE_KEYWORDS}"
+            "${dicep_PARAM_MULTI_VALUE_KEYWORDS}"
+            ${ARGN}
+    )
 
-    add_library(${PROJ_NAME} INTERFACE)
-    target_sources(${PROJ_NAME} INTERFACE "$<BUILD_INTERFACE:${_detail_header_files};${_header_files}>")
-    target_include_directories(${PROJ_NAME} INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/>)
-    target_include_directories(${PROJ_NAME} SYSTEM INTERFACE $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/include>)
-    #    target_compile_definitions(${PROJ_NAME} INTERFACE
-    #            ${PROJ_PREFIX}_ENABLE_ASSERTIONS=${_${PROJ_NAME}_enable_assertions}
-    #            ${PROJ_PREFIX}_ENABLE_PRECONDITION_CHECKS=${_${PROJ_NAME}_enable_precondition_checks})
-    #    target_compile_definitions(${PROJ_NAME} INTERFACE
-    #            ${PROJ_PREFIX}_ENABLE_ASSERTIONS=${_${PROJ_NAME}_enable_assertions}
-    #            ${PROJ_PREFIX}_ENABLE_PRECONDITION_CHECKS=${_${PROJ_NAME}_enable_precondition_checks}
-    #            ${PROJ_PREFIX}_ENABLE_THREAD_POOL_READY_SIGNAL=${_${PROJ_NAME}_enable_thread_pool_ready_signal}
-    #            ${PROJ_PREFIX}_ENABLE_VERBOSE_LOG=${_${PROJ_NAME}_enable_verbose_log}
-    #            ${PROJ_PREFIX}_TEST_THREAD_POOL_DBGOUT=${_${PROJ_NAME}_enable_thread_pool_dbgout}
-    #            #${PROJ_PREFIX}_UNIT_TEST=${_${PROJ_NAME}_unit_test}
-    #            V=1
-    #            )
-    #    set_target_properties(${PROJ_NAME} PROPERTIES
-    #            #${PROJECT_MACRO_PREFIX}_ENABLE_ASSERTIONS=${_${PROJECT_MACRO_NAME}_enable_assertions}
-    #            #${PROJECT_MACRO_PREFIX}_ENABLE_PRECONDITION_CHECKS=${_${PROJECT_MACRO_NAME}_enable_precondition_checks}
-    #            #${PROJECT_MACRO_PREFIX}_ENABLE_THREAD_POOL_READY_SIGNAL=${_${PROJECT_MACRO_NAME}_enable_thread_pool_ready_signal}
-    #            #${PROJECT_MACRO_PREFIX}_ENABLE_VERBOSE_LOG=${_${PROJECT_MACRO_NAME}_enable_verbose_log}
-    #            #${PROJECT_MACRO_PREFIX}_TEST_THREAD_POOL_DBGOUT=${_${PROJECT_MACRO_NAME}_enable_thread_pool_dbgout}
-    #            ${PROJECT_MACRO_PREFIX}_UNIT_TEST=${_${PROJECT_MACRO_NAME}_unit_test}
-    #            #${PROJECT_MACRO_PREFIX}_UNIT_TEST=0
-    #            #UNIT_TESTING=0
-    #            )
-    #target_link_libraries(fsm_cxx INTERFACE debug_assert)
+    set(dicep_usage "define_cxx_executable_project(<Name>
+     [INSTALL] [GENERATE_CONFIG] [BUILD_DOCS] 
+     [PREFIX <c-macro-prefix-name>]
+     [CXXSTANDARD 17/20/11]
+     [OPTIONS \"-Wall ...\"]
+     [VERSION \"\${PROJECT_VERSION}\"]
+     [HEADERS a.hh b.hh ...]
+     [DETAILED_HEADERS detail/a.hh...]
+     [SOURCES a.cc b.cc ...]
+     [INCLUDE_DIRECTORIES ../include ./include ...]
+     [LIBRARIES rt thread ...]
 
-    if (MSVC)
-        target_compile_options(${PROJ_NAME} INTERFACE /wd4800 # truncation to bool warning
-                #/D${PROJ_PREFIX}_UNIT_TEST=${_${PROJ_NAME}_unit_test}
-                #/D${PROJ_PREFIX}_ENABLE_ASSERTIONS=${_${PROJ_NAME}_enable_assertions}
-                #/D${PROJ_PREFIX}_ENABLE_PRECONDITION_CHECKS=${_${PROJ_NAME}_enable_precondition_checks}
-                #/D${PROJ_PREFIX}_ENABLE_THREAD_POOL_READY_SIGNAL=${_${PROJ_NAME}_enable_thread_pool_ready_signal}
-                #/D${PROJ_PREFIX}_ENABLE_VERBOSE_LOG=${_${PROJ_NAME}_enable_verbose_log}
-                #/D${PROJ_PREFIX}_TEST_THREAD_POOL_DBGOUT=${_${PROJ_NAME}_enable_thread_pool_dbgout}
-                #/D#${PROJ_PREFIX}_UNIT_TEST=${_${PROJ_NAME}_unit_test}
-                #/DV=1
-                )
+     [FLEX <my-flex-target> <scanner.l> [options...]]
+     [BISON <my-bison-target> <parser.l> [options...]]
+     )
+     
+     prefix-name should be UPPERCASE since it's primary used as part of C/C++ Macro Name.
+     
+     Unparsed Params Are:
+     ${dicep_ARG_UNPARSED_ARGUMENTS}
+    ")
+
+    if (NOT "${dicep_ARG_UNPARSED_ARGUMENTS}" STREQUAL "")
+        message(SEND_ERROR ${dicep_usage})
     else ()
-        target_compile_options(${PROJ_NAME} INTERFACE
-                #-D${PROJ_PREFIX}_UNIT_TEST=${_${PROJ_NAME}_unit_test}
-                #-D${PROJ_PREFIX}_ENABLE_ASSERTIONS=${_${PROJ_NAME}_enable_assertions}
-                #-D${PROJ_PREFIX}_ENABLE_PRECONDITION_CHECKS=${_${PROJ_NAME}_enable_precondition_checks}
-                #-D${PROJ_PREFIX}_ENABLE_THREAD_POOL_READY_SIGNAL=${_${PROJ_NAME}_enable_thread_pool_ready_signal}
-                #-D${PROJ_PREFIX}_ENABLE_VERBOSE_LOG=${_${PROJ_NAME}_enable_verbose_log}
-                #-D${PROJ_PREFIX}_TEST_THREAD_POOL_DBGOUT=${_${PROJ_NAME}_enable_thread_pool_dbgout}
-                #-D#${PROJ_PREFIX}_UNIT_TEST=${_${PROJ_NAME}_unit_test}
-                #-DV=1
+        # # set(_src_list "${dicep_MULTI_VALUE_KEYWORDS}")
+        # set(_src_list)
+        # foreach (f ${dicep_ARG_UNPARSED_ARGUMENTS})
+        #     list(APPEND _src_list ${f})
+        # endforeach ()
+
+        if ("${dicep_ARG_PREFIX}" STREQUAL "")
+            string(SUBSTRING "${name}" 0 3 dicep_ARG_PREFIX)
+        endif ()
+
+        #        set(_dicep_type)
+        #        if (${dicep_ARG_INTERFACE})
+        #            set(_dicep_type INTERFACE)
+        #        endif ()
+        #        if (${dicep_ARG_SHARED})
+        #            set(_dicep_type SHARED)
+        #        endif ()
+        #        if (${dicep_ARG_STATIC})
+        #            set(_dicep_type STATIC)
+        #        endif ()
+        #        if (${dicep_ARG_MODULE})
+        #            set(_dicep_type MODULE)
+        #        endif ()
+
+        set(PROJ_NAME ${name})
+        set(PROJ_PREFIX ${dicep_ARG_PREFIX})
+
+        if (NOT "${PROJECT_MACRO_PREFIX}" STREQUAL "")
+            set(_macro_name_prefix "${PROJECT_MACRO_PREFIX}")
+        else ()
+            set(_macro_name_prefix "${PROJ_PREFIX}")
+        endif ()
+        ensure_options_values(${PROJ_NAME} ${_macro_name_prefix})
+
+        debug("--------- Executable ---------> ${PROJ_NAME} (prefix: ${PROJ_PREFIX}) with type: \"${_dicep_type}\" | SRC: ${dicep_ARG_SOURCES}")
+
+        if ("${dicep_ARG_VERSION}" STREQUAL "")
+            set(dicep_ARG_VERSION "${PROJECT_VERSION}")
+        endif ()
+        if ("${dicep_ARG_CXXSTANDARD}" STREQUAL "")
+            set(dicep_ARG_CXXSTANDARD "17")
+        endif ()
+
+        if (dicep_ARG_GENERATE_CONFIG)
+            gen_versions(${PROJ_NAME} ${PROJ_PREFIX}
+                    ${PROJ_NAME}-version.hh
+                    ${PROJ_NAME}-config.hh
+                    ${PROJ_NAME}-${dicep_ARG_VERSION}
+                    ${CMAKE_SOURCE_DIR}/${CMAKE_SCRIPTS}/version.h.in
+                    ${CMAKE_SOURCE_DIR}/${CMAKE_SCRIPTS}/config-base.h.in
+                    )
+        endif ()
+
+        list(APPEND dicep_ARG_INCLUDE_DIRECTORIES
+                "${CMAKE_CURRENT_SOURCE_DIR}/include")
+
+        add_executable(${PROJ_NAME} ${dicep_ARG_SOURCES})
+
+        target_sources(${PROJ_NAME} PRIVATE
+                "$<BUILD_INTERFACE:${dicep_ARG_DETAILED_HEADERS};${dicep_ARG_HEADERS}>")
+
+        set_target_properties(${PROJ_NAME} PROPERTIES LINKER_LANGUAGE CXX)
+
+        target_compile_features(${PROJ_NAME} PRIVATE "cxx_std_${dicep_ARG_CXXSTANDARD}")
+
+        target_link_libraries(${PROJ_NAME} ${dicep_ARG_LIBRARIES})
+
+        target_compile_options(${PROJ_NAME} PRIVATE
+                # -fno-permissive # don't care about declaration of '<name>' changes meaning of '<name>'
+                "${dicep_ARG_OPTIONS}"
                 )
+
+        target_include_directories(${PROJ_NAME}
+                PUBLIC
+                ${dicep_ARG_INCLUDE_DIRECTORIES}
+                PRIVATE
+                # $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+                $<BUILD_INTERFACE:${CMAKE_GENERATED_DIR}>
+                $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
+                )
+        target_include_directories(${PROJ_NAME}
+                SYSTEM PRIVATE
+                $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/include>
+                )
+
+        # message(STATUS "----------- s2 ------------")
+        set(_defs ${${PROJ_PREFIX}_cxx_defs})
+
+        if (MSVC)
+            list(TRANSFORM _defs PREPEND /D)
+            target_compile_options(${PROJ_NAME} INTERFACE /wd4800 # truncation to bool warning
+                    ${_defs}
+
+                    # /D${PROJ_PREFIX}_UNIT_TEST=${_${PROJ_NAME}_unit_test}
+                    )
+        else ()
+            list(TRANSFORM _defs PREPEND -D)
+            target_compile_options(${PROJ_NAME} INTERFACE
+                    ${_defs}
+
+                    # -D${PROJ_PREFIX}_UNIT_TEST=${_${PROJ_NAME}_unit_test}
+                    )
+        endif ()
+
+
+        if (NOT dicep_ARG_FLEX AND NOT dicep_ARG_BISON)
+        else ()
+            debug_print_value(dicep_ARG_FLEX)
+            debug_print_value(dicep_ARG_BISON)
+            add_lexer_targets_to(${PROJ_NAME}
+                    FLEX ${dicep_ARG_FLEX}
+                    BISON ${dicep_ARG_BISON}
+                    ${dicep_ARG_UNPARSED_ARGUMENTS}
+                    )
+        endif ()
+
     endif ()
 
-    # Setup package config
-    include(CMakePackageConfigHelpers)
-    set(CONFIG_PACKAGE_INSTALL_DIR lib/cmake/${PROJ_NAME})
+    #    set(_source_files ${${PROJ_PREFIX}_source_files})
+    #    set(_header_files ${${PROJ_PREFIX}_header_files})
+    #    set(_detail_header_files ${${PROJ_PREFIX}_detail_header_files})
+    #    # message(STATUS "----------- s --- 1")
+    #    debug_print_list_value(_header_files)
+    #    # message(STATUS "----------- s --- 2")
+    #    debug_print_list_value(_source_files)
+    #
+    #    # debug_print_value(${PROJ_NAME})
+    #    set(CMAKE_CXX_STANDARD 17)
+    #    set(CMAKE_CXX_STANDARD_REQUIRED ON)
+    #    set(CMAKE_CXX_EXTENSIONS ON)
+    #
+    #    #
+    #    # Just for QT app ...
+    #    # set(CMAKE_AUTOMOC ON)    # Qt moc, meta-object compiler
+    #    # set(CMAKE_AUTORCC ON)    # Qt rcc, resources compiler
+    #    # set(CMAKE_AUTOUIC ON)    # Qt uic, User-Interface compiler
+    #    ensure_options_values(${PROJ_NAME} ${PROJ_PREFIX})
+    #    gen_versions(${PROJ_NAME} ${PROJ_PREFIX}
+    #            ${PROJ_NAME}-version.hh
+    #            ${PROJ_NAME}-config.hh
+    #            ${PROJ_NAME}-${PROJECT_VERSION}
+    #            ${CMAKE_SOURCE_DIR}/${CMAKE_SCRIPTS}/version.h.in
+    #            ${CMAKE_SOURCE_DIR}/${CMAKE_SCRIPTS}/config-base.h.in
+    #            )
+    #
+    #    # message(STATUS "----------- s1, executable: ${PROJ_NAME} ------------")
+    #    add_executable(${PROJ_NAME} ${_source_files})
+    #    target_sources(${PROJ_NAME} PRIVATE "$<BUILD_INTERFACE:${_detail_header_files};${_header_files}>")
+    #    target_include_directories(${PROJ_NAME} PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/>)
+    #    target_include_directories(${PROJ_NAME} SYSTEM PRIVATE $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/include>)
+    #
+    #    # message(STATUS "----------- s2 ------------")
+    #    set(_defs ${${PROJ_PREFIX}_cxx_defs})
+    #
+    #    if (MSVC)
+    #        list(TRANSFORM _defs PREPEND /D)
+    #        target_compile_options(${PROJ_NAME} INTERFACE /wd4800 # truncation to bool warning
+    #                ${_defs}
+    #
+    #                # /D${PROJ_PREFIX}_UNIT_TEST=${_${PROJ_NAME}_unit_test}
+    #                )
+    #    else ()
+    #        list(TRANSFORM _defs PREPEND -D)
+    #        target_compile_options(${PROJ_NAME} INTERFACE
+    #                ${_defs}
+    #
+    #                # -D${PROJ_PREFIX}_UNIT_TEST=${_${PROJ_NAME}_unit_test}
+    #                )
+    #    endif ()
+endmacro()
 
-    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/${PROJ_NAME}-config.cmake "
+# PREREQUISITES:
+#    CMAKE_SCRIPTS MUST BE defined as "cmake" or your cmake scripts folder
+#      we assume the *.cmake put at "${CMAKE_SOURCE_DIR}/${CMAKE_SCRIPTS}"
+#      includes version.h.in and config-base.h.in
+#
+macro(define_cxx_library_project name)
+    set(diclp_PARAM_OPTIONS
+            INTERFACE         # interface or public
+            STATIC
+            SHARED
+            MODULE
+            # PUBLIC            # interface or public
+            INSTALL           # installable?
+            GENERATE_CONFIG   # generate config.h and version.h
+            BUILD_DOCS        # build docs with doxygen? 
+            )
+    set(diclp_PARAM_ONE_VALUE_KEYWORDS
+            PREFIX            # PROJ_PREFIX
+            CXXSTANDARD       # such as CXXSTANDARD 17
+            OPTIONS           # cxx compiler options
+            VERSION           # default is ${PROJECT_VERSION}
+            INSTALL_INC_DIR   # headers in <INSTALL_INC_DIR>/<Name> will be installed
+            )
+    set(diclp_PARAM_MULTI_VALUE_KEYWORDS
+            HEADERS
+            DETAILED_HEADERS
+            SOURCES
+            INCLUDE_DIRECTORIES
+            LIBRARIES
+            FLEX
+            BISON
+            )
+
+    cmake_parse_arguments(
+            diclp_ARG
+            "${diclp_PARAM_OPTIONS}"
+            "${diclp_PARAM_ONE_VALUE_KEYWORDS}"
+            "${diclp_PARAM_MULTI_VALUE_KEYWORDS}"
+            ${ARGN}
+    )
+
+    set(diclp_usage "define_cxx_library_project(<Name>
+     [INTERFACE | STATIC | SHARED]
+     
+     [INSTALL] [GENERATE_CONFIG] [BUILD_DOCS] 
+     [PREFIX <c-macro-prefix-name>]
+     [CXXSTANDARD 17/20/11]
+     [OPTIONS \"-Wall ...\"]
+     [VERSION \"\${PROJECT_VERSION}\"]
+     [HEADERS a.hh b.hh ...]
+     [DETAILED_HEADERS detail/a.hh...]
+     [SOURCES a.cc b.cc ...]
+     [INCLUDE_DIRECTORIES ../include ./include ...]
+     [INSTALL_INC_DIR include]  # headers in <INSTALL_INC_DIR>/<Name> will be installed
+
+     [FLEX <my-flex-target> <scanner.l> [options...]]
+     [BISON <my-bison-target> <parser.l> [options...]]
+     )
+     
+     prefix-name should be UPPERCASE since it's primary used as part of C/C++ Macro Name.
+     
+     Unparsed Params Are:
+     ${diclp_ARG_UNPARSED_ARGUMENTS}
+    ")
+
+    if (NOT "${diclp_ARG_UNPARSED_ARGUMENTS}" STREQUAL "")
+        message(SEND_ERROR ${diclp_usage})
+    else ()
+        # # set(_src_list "${dicep_MULTI_VALUE_KEYWORDS}")
+        # set(_src_list)
+        # foreach (f ${dicep_ARG_UNPARSED_ARGUMENTS})
+        #     list(APPEND _src_list ${f})
+        # endforeach ()
+
+        if ("${diclp_ARG_PREFIX}" STREQUAL "")
+            string(SUBSTRING "${name}" 0 3 diclp_ARG_PREFIX)
+        endif ()
+
+        set(_diclp_type)
+        if (${diclp_ARG_INTERFACE})
+            set(_diclp_type INTERFACE)
+        endif ()
+        if (${diclp_ARG_SHARED})
+            set(_diclp_type SHARED)
+        endif ()
+        if (${diclp_ARG_STATIC})
+            set(_diclp_type STATIC)
+        endif ()
+        if (${diclp_ARG_MODULE})
+            set(_diclp_type MODULE)
+        endif ()
+
+        set(PROJ_NAME ${name})
+        set(PROJ_PREFIX ${diclp_ARG_PREFIX})
+
+
+        if (NOT "${PROJECT_MACRO_PREFIX}" STREQUAL "")
+            set(_macro_name_prefix "${PROJECT_MACRO_PREFIX}")
+        else ()
+            set(_macro_name_prefix "${PROJ_PREFIX}")
+        endif ()
+        ensure_options_values(${PROJ_NAME} ${_macro_name_prefix})
+
+        debug("--------- Library ---------> ${PROJ_NAME} (prefix: ${PROJ_PREFIX}) with type: \"${_diclp_type}\" | SRC: ${diclp_ARG_SOURCES}")
+        # debug_print_value(PROJ_PREFIX)
+        # debug_print_value(diclp_ARG_INTERFACE)
+        # debug_print_value(diclp_ARG_INSTALL)
+        # debug_print_value(diclp_ARG_BUILD_DOCS)
+        # debug_print_value(diclp_ARG_GENERATE_CONFIG)
+        # debug_print_value(diclp_ARG_OPTIONS)
+        # debug_print_list_value(diclp_ARG_SOURCES)
+
+        # set(CMAKE_CXX_STANDARD 17)
+        # set(CMAKE_CXX_STANDARD_REQUIRED ON)
+        # set(CMAKE_CXX_EXTENSIONS ON)
+
+        #
+        # Just for QT app ...
+        # set(CMAKE_AUTOMOC ON)    # Qt moc, meta-object compiler
+        # set(CMAKE_AUTORCC ON)    # Qt rcc, resources compiler
+        # set(CMAKE_AUTOUIC ON)    # Qt uic, User-Interface compiler
+
+        if ("${diclp_ARG_VERSION}" STREQUAL "")
+            set(diclp_ARG_VERSION "${PROJECT_VERSION}")
+        endif ()
+        if ("${diclp_ARG_CXXSTANDARD}" STREQUAL "")
+            set(diclp_ARG_CXXSTANDARD "17")
+        endif ()
+
+        if (diclp_ARG_GENERATE_CONFIG)
+            gen_versions(${PROJ_NAME} ${PROJ_PREFIX}
+                    ${PROJ_NAME}-version.hh
+                    ${PROJ_NAME}-config.hh
+                    ${PROJ_NAME}-${diclp_ARG_VERSION}
+                    ${CMAKE_SOURCE_DIR}/${CMAKE_SCRIPTS}/version.h.in
+                    ${CMAKE_SOURCE_DIR}/${CMAKE_SCRIPTS}/config-base.h.in
+                    )
+        endif ()
+
+        list(APPEND diclp_ARG_INCLUDE_DIRECTORIES
+                "${CMAKE_CURRENT_SOURCE_DIR}/include")
+
+        debug_print_value(PROJ_NAME)
+        debug_print_value(PROJ_PREFIX)
+        add_library(${PROJ_NAME} ${_diclp_type})
+        add_library(libs::${PROJ_NAME} ALIAS ${PROJ_NAME})
+        add_library(${PROJ_NAME}::${PROJ_NAME} ALIAS ${PROJ_NAME})
+
+        set_target_properties(${PROJ_NAME} PROPERTIES LINKER_LANGUAGE CXX)
+
+        debug_print_list_value(diclp_ARG_INCLUDE_DIRECTORIES)
+        # debug_print_value(_diclp_type)
+        if (NOT "${_diclp_type}" STREQUAL "INTERFACE")
+            target_compile_features(${PROJ_NAME} PRIVATE "cxx_std_${diclp_ARG_CXXSTANDARD}")
+
+            target_compile_options(${PROJ_NAME} PRIVATE
+                    # -fno-permissive # don't care about declaration of '<name>' changes meaning of '<name>'
+                    "${diclp_ARG_OPTIONS}"
+                    )
+
+            target_include_directories(${PROJ_NAME}
+                    PUBLIC
+                    ${diclp_ARG_INCLUDE_DIRECTORIES}
+                    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
+                    $<INSTALL_INTERFACE:$<CMAKE_CURRENT_BINARY_DIR>>
+                    PRIVATE
+                    # $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+                    $<BUILD_INTERFACE:${CMAKE_GENERATED_DIR}>
+                    # SYSTEM PRIVATE
+                    $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/include>
+                    )
+
+            target_sources(${PROJ_NAME} PRIVATE
+                    "$<BUILD_INTERFACE:${diclp_ARG_SOURCES}>"
+                    )
+        else ()
+            target_compile_features(${PROJ_NAME} INTERFACE "cxx_std_${diclp_ARG_CXXSTANDARD}")
+
+            target_compile_options(${PROJ_NAME} INTERFACE
+                    # -fno-permissive # don't care about declaration of '<name>' changes meaning of '<name>'
+                    "${diclp_ARG_OPTIONS}"
+                    )
+
+            target_include_directories(${PROJ_NAME}
+                    INTERFACE
+                    $<BUILD_INTERFACE:${diclp_ARG_INCLUDE_DIRECTORIES}>
+                    #PRIVATE
+                    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
+                    #$<BUILD_INTERFACE:${CMAKE_GENERATED_DIR}>
+                    #$<INSTALL_INTERFACE:$<CMAKE_CURRENT_BINARY_DIR>>
+                    #SYSTEM INTERFACE
+                    $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/include>)
+
+            target_sources(${PROJ_NAME} INTERFACE
+                    "$<BUILD_INTERFACE:${diclp_ARG_HEADERS};${diclp_ARG_DETAILED_HEADERS}>")
+        endif ()
+
+
+
+        set(_lib_inc_dir include)
+        if (NOT "${diclp_ARG_INSTALL_INC_DIR}" STREQUAL "")
+            set(_lib_inc_dir "${diclp_ARG_INSTALL_INC_DIR}")
+        elseif (${diclp_ARG_INCLUDE_DIRECTORIES})
+            list(GET diclp_ARG_INCLUDE_DIRECTORIES 0 _lib_inc_dir)
+        endif ()
+        get_filename_component(_lib_inc_dir ${_lib_inc_dir} REALPATH)
+
+        # Find all the public headers
+        get_target_property(${PROJ_NAME}_PUBLIC_HEADER_DIR ${PROJ_NAME} INTERFACE_INCLUDE_DIRECTORIES)
+        debug_print_value(${PROJ_NAME}_PUBLIC_HEADER_DIR)
+        if ("${${PROJ_NAME}_PUBLIC_HEADER_DIR}" STREQUAL "")
+            set(${PROJ_NAME}_PUBLIC_HEADER_DIR "${_lib_inc_dir}")
+            debug_print_value(${PROJ_NAME}_PUBLIC_HEADER_DIR)
+        endif ()
+        
+        
+        
+        # target_compile_definitions(${PROJ_NAME} INTERFACE
+        # ${PROJ_PREFIX}_ENABLE_ASSERTIONS=${_${PROJ_NAME}_enable_assertions}
+        # ${PROJ_PREFIX}_ENABLE_PRECONDITION_CHECKS=${_${PROJ_NAME}_enable_precondition_checks}
+        # ${PROJ_PREFIX}_ENABLE_THREAD_POOL_READY_SIGNAL=${_${PROJ_NAME}_enable_thread_pool_ready_signal}
+        # ${PROJ_PREFIX}_ENABLE_VERBOSE_LOG=${_${PROJ_NAME}_enable_verbose_log}
+        # ${PROJ_PREFIX}_TEST_THREAD_POOL_DBGOUT=${_${PROJ_NAME}_enable_thread_pool_dbgout}
+        # #${PROJ_PREFIX}_UNIT_TEST=${_${PROJ_NAME}_unit_test}
+        # )
+        # set_target_properties(${PROJ_NAME} PROPERTIES
+        # ${PROJECT_MACRO_PREFIX}_ENABLE_ASSERTIONS=${_${PROJECT_MACRO_NAME}_enable_assertions}
+        # ${PROJECT_MACRO_PREFIX}_ENABLE_PRECONDITION_CHECKS=${_${PROJECT_MACRO_NAME}_enable_precondition_checks}
+        # ${PROJECT_MACRO_PREFIX}_ENABLE_THREAD_POOL_READY_SIGNAL=${_${PROJECT_MACRO_NAME}_enable_thread_pool_ready_signal}
+        # ${PROJECT_MACRO_PREFIX}_ENABLE_VERBOSE_LOG=${_${PROJECT_MACRO_NAME}_enable_verbose_log}
+        # ${PROJECT_MACRO_PREFIX}_TEST_THREAD_POOL_DBGOUT=${_${PROJECT_MACRO_NAME}_enable_thread_pool_dbgout}
+        # ${PROJECT_MACRO_PREFIX}_UNIT_TEST=${_${PROJECT_MACRO_NAME}_unit_test}
+        # #${PROJECT_MACRO_PREFIX}_UNIT_TEST=0
+        # #UNIT_TESTING=0
+        # )
+        # target_link_libraries(fsm_cxx INTERFACE debug_assert)
+        if (MSVC)
+            target_compile_options(${PROJ_NAME} INTERFACE /wd4800 # truncation to bool warning
+
+                    # /D${PROJ_PREFIX}_UNIT_TEST=${_${PROJ_NAME}_unit_test}
+                    )
+        else ()
+            if (ENABLE_PPPM_WARNINGS)
+                target_compile_options(${PROJ_NAME} INTERFACE
+
+                        # -D${PROJ_PREFIX}_UNIT_TEST=${_${PROJ_NAME}_unit_test}
+                        )
+            else ()
+                if (GCC)
+                    target_compile_options(${PROJ_NAME} INTERFACE
+                            -Wno-unknown-pragmas  # disable #pragma message() warnings in gcc
+                            -ftrack-macro-expansion=0 and -fno-diagnostics-show-caret # https://stackoverflow.com/questions/30255294/how-to-hide-extra-output-from-pragma-message
+                            )
+                else ()
+                    target_compile_options(${PROJ_NAME} INTERFACE
+                            -Wno-unknown-pragmas  # disable #pragma message() warnings in gcc
+                            )
+                endif ()
+            endif ()
+        endif ()
+
+
+        if (NOT diclp_ARG_FLEX AND NOT diclp_ARG_BISON)
+        else ()
+            debug_print_value(diclp_ARG_FLEX)
+            debug_print_value(diclp_ARG_BISON)
+            add_lexer_targets_to(${PROJ_NAME}
+                    FLEX ${diclp_ARG_FLEX}
+                    BISON ${diclp_ARG_BISON}
+                    ${diclp_ARG_UNPARSED_ARGUMENTS}
+                    )
+        endif ()
+
+
+        message(STATUS "[${PROJ_NAME}] check and define install section.")
+
+        if (diclp_ARG_INSTALL)
+            # Setup package config
+            include(CMakePackageConfigHelpers)
+
+            set(CONFIG_PACKAGE_INSTALL_DIR lib/cmake/${PROJ_NAME})
+
+            file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/${PROJ_NAME}-config.cmake "
 include(\${CMAKE_CURRENT_LIST_DIR}/${PROJ_NAME}-targets.cmake)
 set(${PROJ_NAME}_LIBRARY ${PROJ_NAME})
 set(${PROJ_NAME}_LIBRARIES ${PROJ_NAME})
 ")
 
-    write_basic_package_version_file(
-            ${CMAKE_CURRENT_BINARY_DIR}/${PROJ_NAME}-config-version.cmake
-            VERSION ${VERSION}
-            COMPATIBILITY SameMajorVersion
-    )
+            write_basic_package_version_file(
+                    ${CMAKE_CURRENT_BINARY_DIR}/${PROJ_NAME}-config-version.cmake
+                    VERSION ${diclp_ARG_VERSION}
+                    COMPATIBILITY SameMajorVersion
+            )
 
-    # Install target and header
-    install(DIRECTORY include/${PROJ_NAME} DESTINATION include)
+            set(_lib_inc_prefix "${_lib_inc_dir}/${PROJ_NAME}")
 
-    install(FILES include/${PROJ_NAME}.hh DESTINATION include)
+            # Install target and header
+            install(DIRECTORY ${_lib_inc_prefix}
+                    DESTINATION include
+                    FILES_MATCHING PATTERN "${PROJ_PREFIX}*.hh")
 
-    install(FILES
-            ${CMAKE_CURRENT_BINARY_DIR}/${PROJ_NAME}-config.cmake
-            ${CMAKE_CURRENT_BINARY_DIR}/${PROJ_NAME}-config-version.cmake
-            DESTINATION
-            ${CONFIG_PACKAGE_INSTALL_DIR})
+            install(FILES ${_lib_inc_prefix}.hh DESTINATION include)
 
-    # Only export target when using imported targets
-    if (${${PROJ_PREFIX}_HAS_IMPORTED_TARGETS})
+            install(FILES
+                    ${CMAKE_CURRENT_BINARY_DIR}/${PROJ_NAME}-config.cmake
+                    ${CMAKE_CURRENT_BINARY_DIR}/${PROJ_NAME}-config-version.cmake
+                    DESTINATION
+                    ${CONFIG_PACKAGE_INSTALL_DIR})
 
-        install(TARGETS ${PROJ_NAME}
-                EXPORT ${PROJ_NAME}-targets
-                DESTINATION lib)
+            # Only export target when using imported targets
+            if (${${PROJ_PREFIX}_HAS_IMPORTED_TARGETS})
+                install(TARGETS ${PROJ_NAME}
+                        EXPORT ${PROJ_NAME}-targets
+                        DESTINATION lib)
 
-        install(EXPORT ${PROJ_NAME}-targets
-                DESTINATION
-                ${CONFIG_PACKAGE_INSTALL_DIR}
-                )
+                install(EXPORT ${PROJ_NAME}-targets
+                        NAMESPACE libs::
+                        DESTINATION
+                        ${CONFIG_PACKAGE_INSTALL_DIR}
+                        )
+            endif ()
 
-    endif ()
+        endif () # INSTALL
 
-    # other subdirectories
-    # only add if not inside add_subdirectory()
-    option(${PROJ_PREFIX}_BUILD_TESTS_EXAMPLES "build test and example" OFF)
-    if (${${PROJ_PREFIX}_BUILD_TESTS_EXAMPLES} OR (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR))
-        enable_testing()
-        add_subdirectory(examples/)
-        add_subdirectory(tests/)
-    endif ()
+        # other subdirectories
+        # only add if not inside add_subdirectory()
+        option(${PROJ_PREFIX}_BUILD_TESTS_EXAMPLES "build tests and examples" OFF)
 
-    option(${PROJ_PREFIX}_BUILD_DOCS "generate documentation" OFF)
-    if (${PROJ_PREFIX}_BUILD_DOCS OR (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR))
-        if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/docs/")
-            find_package(Doxygen)
-            if (NOT DOXYGEN_FOUND)
-                set(${PROJ_PREFIX}_BUILD_DOCS OFF)
-            else ()
-                if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
-                    set(${PROJ_PREFIX}_BUILD_DOCS ON)
-                endif ()
-                if ((${USE_DEBUG}) OR ($ENV{CI_RUNNING}))
+        if (${${PROJ_PREFIX}_BUILD_TESTS_EXAMPLES} OR (${CMAKE_CURRENT_SOURCE_DIR} STREQUAL CMAKE_SOURCE_DIR))
+            if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/examples/")
+                enable_testing()
+                add_subdirectory(examples/)
+            endif ()
+            if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/")
+                enable_testing()
+                add_subdirectory(tests/)
+            endif ()
+        endif ()
+
+        option(${PROJ_PREFIX}_BUILD_DOCS "build documentations" ${diclp_ARG_BUILD_DOCS})
+        debug_print_value(${PROJ_PREFIX}_BUILD_DOCS)
+
+        if (${PROJ_PREFIX}_BUILD_DOCS OR (${CMAKE_CURRENT_SOURCE_DIR} STREQUAL CMAKE_SOURCE_DIR))
+            if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/docs/")
+                find_package(Doxygen)
+
+                if (NOT DOXYGEN_FOUND)
                     set(${PROJ_PREFIX}_BUILD_DOCS OFF)
+                else ()
+                    if (${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_SOURCE_DIR})
+                        set(${PROJ_PREFIX}_BUILD_DOCS ON)
+                    endif ()
+
+                    if ((${USE_DEBUG}) OR ($ENV{CI_RUNNING}))
+                        set(${PROJ_PREFIX}_BUILD_DOCS OFF)
+                    endif ()
                 endif ()
+
+                if (${PROJ_PREFIX}_BUILD_DOCS)
+                    message(STATUS "- docs/ including | doxygen ....")
+
+                    # Find all the public headers
+                    set(MY_PUBLIC_HEADER_DIR "${_lib_inc_dir}")
+                    debug_print_value(MY_PUBLIC_HEADER_DIR)
+                    
+                    file(GLOB_RECURSE MY_PUBLIC_HEADERS ${MY_PUBLIC_HEADER_DIR}/*.hh)
+                    debug_print_list_value(MY_PUBLIC_HEADER_DIR)
+                    debug_print_value(PROJECT_SOURCE_DIR)
+
+                    # set(DOXYGEN_INPUT_DIR ${PROJECT_SOURCE_DIR} )
+                    set(DOXYGEN_INPUT_DIR ${PROJECT_SOURCE_DIR}/)
+                    set(DOXYGEN_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/docs/doxygen)
+
+                    # set(DOXYGEN_OUTPUT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/doxygen)
+                    set(DOXYFILE_OUT ${CMAKE_CURRENT_BINARY_DIR}/docs/doxygen/Doxyfile)
+                    set(DOXYGEN_INDEX_FILE ${DOXYGEN_OUTPUT_DIR}/html/index.html)
+                    set(DOXYFILE_IN ${CMAKE_CURRENT_SOURCE_DIR}/docs/${PROJECT_MACRO_MID_NAME}.in.doxygen)
+
+                    # Replace variables inside @@ with the current values
+                    configure_file(${DOXYFILE_IN} ${DOXYFILE_OUT} @ONLY)
+
+                    file(MAKE_DIRECTORY ${DOXYGEN_OUTPUT_DIR}) # Doxygen won't create this for us
+                    add_custom_command(OUTPUT ${DOXYGEN_INDEX_FILE}
+                            DEPENDS ${MY_PUBLIC_HEADERS}
+                            COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYFILE_OUT}
+
+                            # COMMAND
+                            # $<$<CONFIG:Release>:${DOXYGEN_EXECUTABLE} ${DOXYFILE_OUT}>
+                            # $<$<NOT:$<CONFIG:Release>>:${CMAKE_COMMAND} -E "echo 'Only done in Release builds'">
+                            MAIN_DEPENDENCY ${DOXYFILE_OUT} ${DOXYFILE_IN}
+                            COMMENT "Generating docs ..."
+                            VERBATIM)
+
+                    add_custom_target(Doxygen ALL DEPENDS ${DOXYGEN_INDEX_FILE})
+
+                    # install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html DESTINATION     share/doc)
+                    add_subdirectory(docs/)
+
+                    attach_doxygen_to(${PROJ_NAME})
+                    message(STATUS "- docs/ included | doxygen ----")
+                endif ()
+            else ()
+                message(WARNING "docs/ folder not exists but ${PROJ_PREFIX}_BUILD_DOCS is ON.")
             endif ()
-            if (${PROJ_PREFIX}_BUILD_DOCS)
-                message(STATUS "- docs/ including ....")
-
-                # Find all the public headers
-                get_target_property(MY_PUBLIC_HEADER_DIR ${PROJECT_MACRO_NAME} INTERFACE_INCLUDE_DIRECTORIES)
-                file(GLOB_RECURSE MY_PUBLIC_HEADERS ${MY_PUBLIC_HEADER_DIR}/*.hh)
-                debug_print_list_value(MY_PUBLIC_HEADER_DIR)
-                debug_print_value(PROJECT_SOURCE_DIR)
-
-                #set(DOXYGEN_INPUT_DIR ${PROJECT_SOURCE_DIR} )
-                set(DOXYGEN_INPUT_DIR ${PROJECT_SOURCE_DIR}/)
-                set(DOXYGEN_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/docs/doxygen)
-                #set(DOXYGEN_OUTPUT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/doxygen)
-                set(DOXYFILE_OUT ${CMAKE_CURRENT_BINARY_DIR}/docs/doxygen/Doxyfile)
-                set(DOXYGEN_INDEX_FILE ${DOXYGEN_OUTPUT_DIR}/html/index.html)
-                set(DOXYFILE_IN ${CMAKE_CURRENT_SOURCE_DIR}/docs/${PROJECT_MACRO_MID_NAME}.in.doxygen)
-
-                #Replace variables inside @@ with the current values
-                configure_file(${DOXYFILE_IN} ${DOXYFILE_OUT} @ONLY)
-
-                file(MAKE_DIRECTORY ${DOXYGEN_OUTPUT_DIR}) #Doxygen won't create this for us
-                add_custom_command(OUTPUT ${DOXYGEN_INDEX_FILE}
-                        DEPENDS ${MY_PUBLIC_HEADERS}
-                        COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYFILE_OUT}
-                        #COMMAND
-                        #  $<$<CONFIG:Release>:${DOXYGEN_EXECUTABLE} ${DOXYFILE_OUT}>
-                        #  $<$<NOT:$<CONFIG:Release>>:${CMAKE_COMMAND} -E "echo 'Only done in Release builds'">
-                        MAIN_DEPENDENCY ${DOXYFILE_OUT} ${DOXYFILE_IN}
-                        COMMENT "Generating docs ..."
-                        VERBATIM)
-
-                add_custom_target(Doxygen ALL DEPENDS ${DOXYGEN_INDEX_FILE})
-
-                #    install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html DESTINATION     share/doc)
-
-                add_subdirectory(docs/)
-
-                attach_doxygen_to(${PROJ_NAME})
-                message(STATUS "- docs/ included ----")
-            endif ()
-        else ()
-            message(WARNING "docs/ folder not exists but ${PROJ_PREFIX}_BUILD_DOCS is ON.")
         endif ()
     endif ()
-
 endmacro()
+
 
 macro(attach_doxygen_to target)
     if (CMAKE_BUILD_TYPE MATCHES "^[Rr]elease")
@@ -255,13 +706,12 @@ macro(attach_doxygen_to target)
     endif ()
 endmacro()
 
-
-function(add_cxx_17_to target)
+function(add_cxx_standard_to target cxxstandard)
     set_target_properties(${target}
             PROPERTIES
-            CXX_STANDARD 17
+            CXX_STANDARD ${cxxstandard}
             CXX_STANDARD_REQUIRED YES
-            CXX_EXTENSIONS OFF          # use -std=c++11 rather than -std=gnu++11
+            CXX_EXTENSIONS OFF # use -std=c++11 rather than -std=gnu++11
             )
 endfunction()
 
@@ -270,7 +720,461 @@ function(add_cxx_20_to target)
             PROPERTIES
             CXX_STANDARD 20
             CXX_STANDARD_REQUIRED YES
-            CXX_EXTENSIONS OFF          # use -std=c++11 rather than -std=gnu++11
+            CXX_EXTENSIONS OFF # use -std=c++11 rather than -std=gnu++11
             )
 endfunction()
 
+
+macro(enable_sanitizer_for_multi_config)
+    get_property(isMultiConfig GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
+
+    if (isMultiConfig)
+        if (NOT "Asan" IN_LIST CMAKE_CONFIGURATION_TYPES)
+            list(APPEND CMAKE_CONFIGURATION_TYPES Asan)
+            message(STATUS "[ASAN] appended Asan into CMAKE_CONFIGURATION_TYPES")
+        endif ()
+    else ()
+        set(allowedBuildTypes Asan Debug Release RelWithDebInfo MinSizeRel)
+        set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "${allowedBuildTypes}")
+        message(STATUS "[ASAN] set CMAKE_CONFIGURATION_TYPES for Asan support")
+
+        if (CMAKE_BUILD_TYPE AND NOT CMAKE_BUILD_TYPE IN_LIST allowedBuildTypes)
+            message(FATAL_ERROR "Invalid build type: ${CMAKE_BUILD_TYPE}")
+        endif ()
+    endif ()
+
+    message(STATUS "[ASAN] setting up CMAKE_CXX_FLAGS_ASAN")
+
+    set(CMAKE_C_FLAGS_ASAN
+            "${CMAKE_C_FLAGS_DEBUG} -fsanitize=address -fno-omit-frame-pointer" CACHE STRING
+            "Flags used by the C compiler for Asan build type or configuration." FORCE)
+
+    set(CMAKE_CXX_FLAGS_ASAN
+            "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address -fno-omit-frame-pointer" CACHE STRING
+            "Flags used by the C++ compiler for Asan build type or configuration." FORCE)
+
+    set(CMAKE_EXE_LINKER_FLAGS_ASAN
+            "${CMAKE_EXE_LINKER_FLAGS_DEBUG} -fsanitize=address" CACHE STRING
+            "Linker flags to be used to create executables for Asan build type." FORCE)
+
+    set(CMAKE_SHARED_LINKER_FLAGS_ASAN
+            "${CMAKE_SHARED_LINKER_FLAGS_DEBUG} -fsanitize=address" CACHE STRING
+            "Linker lags to be used to create shared libraries for Asan build type." FORCE)
+endmacro()
+
+
+function(define_test_program name)
+    set(define_test_program_PARAM_OPTIONS)
+    set(define_test_program_PARAM_ONE_VALUE_KEYWORDS
+            # MAIN_LIB
+            CXXSTANDARD       # such as CXXSTANDARD 17
+            OPTIONS           # cxx compiler options
+            VERSION           # default is ${PROJECT_VERSION}
+            )
+    set(define_test_program_PARAM_MULTI_VALUE_KEYWORDS
+            PREFIX
+            HEADERS
+            DETAILED_HEADERS
+            SOURCES
+            INCLUDE_DIRECTORIES
+            LIBRARIES
+            FLEX
+            BISON
+            )
+
+    cmake_parse_arguments(
+            define_test_program_ARG
+            "${define_test_program_PARAM_OPTIONS}"
+            "${define_test_program_PARAM_ONE_VALUE_KEYWORDS}"
+            "${define_test_program_PARAM_MULTI_VALUE_KEYWORDS}"
+            ${ARGN}
+    )
+    set(define_test_program_usage "define_test_programe(<Name>
+     [CXXSTANDARD 17/20/11]
+     [OPTIONS \"-Wall ...\"]
+     [VERSION \"\${PROJECT_VERSION}\"]
+     [HEADERS a.hh b.hh ...]
+     [DETAILED_HEADERS detail/a.hh...]
+     [SOURCES a.cc b.cc ...]
+     [INCLUDE_DIRECTORIES ../include ./include ...]
+     [LIBRARIES rt thread ...]
+     [FLEX <my-flex-target> <scanner.l> [options...]]
+     [BISON <my-bison-target> <parser.l> [options...]]
+     [sources...]
+     )
+     
+     prefix-name should be UPPERCASE since it's primary used as part of C/C++ Macro Name.
+     
+     Sample for unpositional param [sources...]:
+        define_test_program(foo a.cc b.cc SOURCES c.cc)
+        # it declares 3 sources: a.cc b.cc c.cc
+     
+     Unparsed Params Are:
+     ${define_test_program_ARG_UNPARSED_ARGUMENTS}")
+
+    #if (NOT "${define_test_program_ARG_UNPARSED_ARGUMENTS}" STREQUAL "")
+    #    message(SEND_ERROR ${define_test_program_usage})
+    #else ()
+
+    #set(_src_list "${define_test_program_MULTI_VALUE_KEYWORDS}")
+    set(_src_list ${define_test_program_ARG_SOURCES})
+    foreach (f ${define_test_program_ARG_UNPARSED_ARGUMENTS})
+        list(APPEND _src_list ${f})
+    endforeach ()
+
+    # debug_print_list_value(define_test_program_ARG_LIBRARIES)
+    # debug_print_list_value(_src_list)
+
+    if (NOT "${define_test_program_ARG_PREFIX}" STREQUAL "")
+        set(_name_prefix "${define_test_program_ARG_PREFIX}")
+    elseif (NOT "${PROJECT_PREFIX}" STREQUAL "")
+        set(_name_prefix "${PROJECT_PREFIX}")
+    elseif (NOT "${PROJECT_MACRO_NAME}" STREQUAL "")
+        set(_name_prefix "${PROJECT_MACRO_NAME}")
+    elseif (NOT "${PROJECT_NAME}" STREQUAL "")
+        set(_name_prefix "${PROJECT_NAME}")
+    endif ()
+    if (NOT "${_name_prefix}" STREQUAL "")
+        set(_proj_name ${_name_prefix}-${name})
+    else ()
+        set(_proj_name ${name})
+    endif ()
+
+    if (NOT "${PROJECT_MACRO_PREFIX}" STREQUAL "")
+        set(_macro_name_prefix "${PROJECT_MACRO_PREFIX}")
+    else ()
+        set(_macro_name_prefix "${_name_prefix}")
+    endif ()
+    ensure_options_values(${_proj_name} ${_macro_name_prefix})
+    #debug_print_value(_macro_name_prefix)
+
+    debug("--------- Test Program ---------> ${_proj_name} (prefix: ${_name_prefix}) | LIBS: ${define_test_program_ARG_LIBRARIES} | SRC: ${_src_list}.")
+
+    if ("${define_test_program_ARG_VERSION}" STREQUAL "")
+        set(define_test_program_ARG_VERSION "${PROJECT_VERSION}")
+    endif ()
+    if ("${define_test_program_ARG_CXXSTANDARD}" STREQUAL "")
+        set(define_test_program_ARG_CXXSTANDARD "17")
+    endif ()
+    # debug_print_value(define_test_program_ARG_CXXSTANDARD)
+
+    list(APPEND define_test_program_ARG_INCLUDE_DIRECTORIES
+            "${CMAKE_SOURCE_DIR}/include" "${CMAKE_CURRENT_SOURCE_DIR}/include")
+
+    add_executable(${_proj_name} ${_src_list})
+
+    # debug_print_value(_proj_name)
+    add_cxx_standard_to(${_proj_name} ${define_test_program_ARG_CXXSTANDARD})
+    #target_compile_features(${_proj_name}-${name} PRIVATE cxx_std_11)
+    #target_compile_definitions(${_proj_name}-${name} PRIVATE)
+    target_compile_definitions(${_proj_name} PRIVATE
+            ${_macro_name_prefix}_ENABLE_ASSERTIONS=${_${_name_prefix}_enable_assertions}
+            ${_macro_name_prefix}_ENABLE_PRECONDITION_CHECKS=${_${_name_prefix}_enable_precondition_checks}
+            ${_macro_name_prefix}_ENABLE_THREAD_POOL_READY_SIGNAL=${_${_name_prefix}_enable_thread_pool_ready_signal}
+            ${_macro_name_prefix}_ENABLE_VERBOSE_LOG=${_${_name_prefix}_enable_verbose_log}
+            ${_macro_name_prefix}_TEST_THREAD_POOL_DBGOUT=${_${_name_prefix}_enable_thread_pool_dbgout}
+            ${_macro_name_prefix}_UNIT_TEST=${_${_name_prefix}_unit_test}
+            #${_name_prefix}_UNIT_TEST=1
+            #UNIT_TESTING=1
+            )
+
+    set_target_properties(${_proj_name} PROPERTIES LINKER_LANGUAGE CXX)
+
+    target_compile_features(${_proj_name} PRIVATE "cxx_std_${define_test_program_ARG_CXXSTANDARD}")
+
+    #target_compile_options(${_proj_name} PRIVATE
+    #        # -fno-permissive # don't care about declaration of '<name>' changes meaning of '<name>'
+    #        "${define_test_program_ARG_OPTIONS}"
+    #        )
+
+    target_include_directories(${_proj_name}
+            PUBLIC
+            ${define_test_program_ARG_INCLUDE_DIRECTORIES}
+            PRIVATE
+            # $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+            $<BUILD_INTERFACE:${CMAKE_GENERATED_DIR}>
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
+
+            SYSTEM PRIVATE
+            $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/include>
+            )
+
+    target_link_libraries(${_proj_name}
+            PRIVATE
+            Threads::Threads
+            ${define_test_program_ARG_LIBRARIES}
+            # undo_cxx
+            # fsm_cxx
+            # cmdr11::cmdr11
+            # Catch2::Catch2
+            # fmt::fmt-header-only
+            )
+    if (MSVC)
+        target_compile_options(${_proj_name} PRIVATE /W4 /WX /utf-8
+                #/D${PROJECT_MACRO_PREFIX}_UNIT_TEST=${_${PROJECT_MACRO_NAME}_unit_test}
+                "${define_test_program_ARG_OPTIONS}"
+                )
+    else ()
+        target_compile_options(${_proj_name} PRIVATE
+                -pedantic -Wall -Wextra -Wshadow -Werror -pthread
+
+                "${define_test_program_ARG_OPTIONS}"
+
+                #-fno-permissive # don't care about declaration of '<name>' changes meaning of '<name>'
+
+                #-pedantic -Wall -Wextra -Werror=return-type -Wshadow=local -Wempty-body -fdiagnostics-color
+                #-D${PROJECT_MACRO_PREFIX}_UNIT_TEST=${_${PROJECT_MACRO_NAME}_unit_test}
+                )
+        if (USE_DEBUG)
+            #            target_compile_options(${_proj_name} PRIVATE
+            #                    -fsanitize=address -fno-omit-frame-pointer
+            #                    # -fsanitize=address -fno-optimize-sibling-calls -fsanitize-address-use-after-scope -fno-omit-frame-pointer -g -O1
+            #                    # -fsanitize=leak -fno-omit-frame-pointer -g -O1
+            #                    # -fsanitize=thread -g -O1
+            #                    # -fsanitize=memory -fno-optimize-sibling-calls -fsanitize-memory-track-origins=2 -fno-omit-frame-pointer -g -O2
+            #                    -fsanitize=undefined -fno-sanitize=vptr
+            #
+            #                    # address(AddressSanitizer), leak(LeakSanitizer), thread(ThreadSanitizer), undefined(UndefinedBehaviorSanitizer), memory(MemorySanitizer) 
+            #                    # [additional_options]: -fno-omit-frame-pointer, fsanitize-recover/fno-sanitize-recover, -fsanitize-blacklist, etc.
+            #                    # [-g] [-OX]
+            #                    )
+            #            if (NOT macOS)
+            #                target_compile_options(${_proj_name} PRIVATE
+            #                        -fsanitize=leak -fno-omit-frame-pointer
+            #                        )
+            #                target_link_options(${_proj_name} PRIVATE -fsanitize=address)
+            #            endif ()
+            #            target_link_options(${_proj_name} PRIVATE -fsanitize=address)
+        endif ()
+    endif ()
+
+
+    if (NOT define_test_program_ARG_FLEX AND NOT define_test_program_ARG_BISON)
+    else ()
+        debug_print_value(define_test_program_ARG_FLEX)
+        debug_print_value(define_test_program_ARG_BISON)
+        add_lexer_targets_to(${PROJ_NAME}
+                FLEX ${define_test_program_ARG_FLEX}
+                BISON ${define_test_program_ARG_BISON}
+                ${define_test_program_ARG_UNPARSED_ARGUMENTS}
+                )
+    endif ()
+
+
+    if (${ENABLE_AUTOMATE_TESTS})
+        get_property(tmp GLOBAL PROPERTY UNIT_TEST_TARGETS)
+        set(tmp ${UNIT_TEST_TARGETS} ${_proj_name})
+        set_property(GLOBAL PROPERTY UNIT_TEST_TARGETS "${tmp}")
+        message(">> add_test(${_proj_name}) ...")
+    endif ()
+
+    if (ANDROID)
+        add_test(NAME ${_proj_name}
+                WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+                COMMAND ${CMAKE_COMMAND} "-DANDROID_NDK=${ANDROID_NDK}"
+                "-DTEST_RESOURCES_DIR=${CMAKE_SOURCE_DIR}"
+                "-DTEST_RESOURCES=tests/data;tests/file_data.txt;Makefile"
+                "-DUNITTEST=${_proj_name}"
+                -P ${CMAKE_CURRENT_SOURCE_DIR}/ExecuteOnAndroid.cmake)
+    else ()
+        add_test(NAME ${_proj_name}
+                WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+                COMMAND $<TARGET_FILE:${_proj_name}>)
+    endif ()
+endfunction()
+
+
+function(define_example_program name)
+    set(define_example_program_PARAM_OPTIONS)
+    set(define_example_program_PARAM_ONE_VALUE_KEYWORDS
+            CXXSTANDARD       # such as CXXSTANDARD 17
+            OPTIONS           # cxx compiler options
+            VERSION           # default is ${PROJECT_VERSION}
+            )
+    set(define_example_program_PARAM_MULTI_VALUE_KEYWORDS
+            PREFIX
+            HEADERS
+            DETAILED_HEADERS
+            SOURCES
+            INCLUDE_DIRECTORIES
+            LIBRARIES
+            FLEX
+            BISON
+            )
+
+    cmake_parse_arguments(
+            define_example_program_ARG
+            "${define_example_program_PARAM_OPTIONS}"
+            "${define_example_program_PARAM_ONE_VALUE_KEYWORDS}"
+            "${define_example_program_PARAM_MULTI_VALUE_KEYWORDS}"
+            ${ARGN}
+    )
+    set(define_example_program_usage "define_example_programe(<Name>
+     [CXXSTANDARD 17/20/11]
+     [OPTIONS \"-Wall ...\"]
+     [VERSION \"\${PROJECT_VERSION}\"]
+     [HEADERS a.hh b.hh ...]
+     [DETAILED_HEADERS detail/a.hh...]
+     [SOURCES a.cc b.cc ...]
+     [INCLUDE_DIRECTORIES ../include ./include ...]
+     [LIBRARIES rt thread ...]
+     [FLEX <my-flex-target> <scanner.l> [options...]]
+     [BISON <my-bison-target> <parser.l> [options...]]
+     [sources...]
+     )
+     
+     prefix-name should be UPPERCASE since it's primary used as part of C/C++ Macro Name.
+     
+     Sample for unpositional param [sources...]:
+        define_example_program(foo a.cc b.cc SOURCES c.cc)
+        # it declares 3 sources: a.cc b.cc c.cc
+     
+     Unparsed Params Are:
+     ${define_example_program_ARG_UNPARSED_ARGUMENTS}")
+
+    #if (NOT "${define_example_program_ARG_UNPARSED_ARGUMENTS}" STREQUAL "")
+    #    message(SEND_ERROR ${define_example_program_usage})
+    #else ()
+
+    #set(_src_list "${define_example_program_MULTI_VALUE_KEYWORDS}")
+    set(_src_list ${define_example_program_ARG_SOURCES})
+    foreach (f ${define_example_program_ARG_UNPARSED_ARGUMENTS})
+        list(APPEND _src_list ${f})
+    endforeach ()
+
+    # debug_print_list_value(define_example_program_ARG_LIBRARIES)
+    # debug_print_list_value(_src_list)
+
+    if (NOT "${define_example_program_ARG_PREFIX}" STREQUAL "")
+        set(_name_prefix "${define_example_program_ARG_PREFIX}")
+    elseif (NOT "$PROJECT_NAME" STREQUAL "")
+        set(_name_prefix "${PROJECT_NAME}")
+    endif ()
+
+    if (NOT "${_name_prefix}" STREQUAL "")
+        set(_proj_name ${_name_prefix}-${name})
+    else ()
+        set(_proj_name ${name})
+    endif ()
+
+    # ensure_options_values(${PROJECT_MACRO_NAME} ${PROJECT_MACRO_PREFIX})
+    if (NOT "${PROJECT_MACRO_PREFIX}" STREQUAL "")
+        set(_macro_name_prefix "${PROJECT_MACRO_PREFIX}")
+    else ()
+        set(_macro_name_prefix "${_name_prefix}")
+    endif ()
+    ensure_options_values(${_proj_name} ${_macro_name_prefix})
+
+    debug("--------- Example Program ---------> ${_proj_name} (prefix: ${_name_prefix}) | LIBS: ${define_example_program_ARG_LIBRARIES} | SRC: ${_src_list}.")
+
+    if ("${define_example_program_ARG_VERSION}" STREQUAL "")
+        set(define_example_program_ARG_VERSION "${PROJECT_VERSION}")
+    endif ()
+    if ("${define_example_program_ARG_CXXSTANDARD}" STREQUAL "")
+        set(define_example_program_ARG_CXXSTANDARD "17")
+    endif ()
+    # debug_print_value(define_example_program_ARG_CXXSTANDARD)
+
+    list(APPEND define_example_program_ARG_INCLUDE_DIRECTORIES
+            "${CMAKE_SOURCE_DIR}/include" "${CMAKE_CURRENT_SOURCE_DIR}/include")
+
+    add_executable(${_proj_name} ${_src_list})
+
+    # debug_print_value(_proj_name)
+    add_cxx_standard_to(${_proj_name} ${define_example_program_ARG_CXXSTANDARD})
+    #target_compile_features(${_proj_name}-${name} PRIVATE cxx_std_11)
+    #target_compile_definitions(${_proj_name}-${name} PRIVATE)
+    target_compile_definitions(${_proj_name} PRIVATE
+            #${_name_prefix}_ENABLE_ASSERTIONS=${_${_name_prefix}_enable_assertions}
+            #${_name_prefix}_ENABLE_PRECONDITION_CHECKS=${_${_name_prefix}_enable_precondition_checks}
+            #${_name_prefix}_ENABLE_THREAD_POOL_READY_SIGNAL=${_${_name_prefix}_enable_thread_pool_ready_signal}
+            #${_name_prefix}_ENABLE_VERBOSE_LOG=${_${_name_prefix}_enable_verbose_log}
+            #${_name_prefix}_TEST_THREAD_POOL_DBGOUT=${_${_name_prefix}_enable_thread_pool_dbgout}
+            #${_name_prefix}_UNIT_TEST=${_${_name_prefix}_unit_test}
+            #${_name_prefix}_UNIT_TEST=1
+            #UNIT_TESTING=1
+            )
+
+    set_target_properties(${_proj_name} PROPERTIES LINKER_LANGUAGE CXX)
+
+    target_compile_features(${_proj_name} PRIVATE "cxx_std_${define_example_program_ARG_CXXSTANDARD}")
+
+    #target_compile_options(${_proj_name} PRIVATE
+    #        # -fno-permissive # don't care about declaration of '<name>' changes meaning of '<name>'
+    #        "${define_example_program_ARG_OPTIONS}"
+    #        )
+
+    target_include_directories(${_proj_name}
+            PUBLIC
+            ${define_example_program_ARG_INCLUDE_DIRECTORIES}
+            PRIVATE
+            # $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+            $<BUILD_INTERFACE:${CMAKE_GENERATED_DIR}>
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
+
+            SYSTEM PRIVATE
+            $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/include>
+            )
+
+    target_link_libraries(${_proj_name}
+            PRIVATE
+            Threads::Threads
+            ${define_example_program_ARG_LIBRARIES}
+            # undo_cxx
+            # fsm_cxx
+            # cmdr11::cmdr11
+            # Catch2::Catch2
+            # fmt::fmt-header-only
+            )
+    if (MSVC)
+        target_compile_options(${_proj_name} PRIVATE /W4 /WX /utf-8
+                #/D${PROJECT_MACRO_PREFIX}_UNIT_TEST=${_${PROJECT_MACRO_NAME}_unit_test}
+                "${define_example_program_ARG_OPTIONS}"
+                )
+    else ()
+        target_compile_options(${_proj_name} PRIVATE
+                -pedantic -Wall -Wextra -Wshadow -Werror -pthread
+
+                "${define_example_program_ARG_OPTIONS}"
+
+                #-fno-permissive # don't care about declaration of '<name>' changes meaning of '<name>'
+
+                #-pedantic -Wall -Wextra -Werror=return-type -Wshadow=local -Wempty-body -fdiagnostics-color
+                #-D${PROJECT_MACRO_PREFIX}_UNIT_TEST=${_${PROJECT_MACRO_NAME}_unit_test}
+                )
+        if (USE_DEBUG)
+            #            target_compile_options(${_proj_name} PRIVATE
+            #                    -fsanitize=address -fno-omit-frame-pointer
+            #                    # -fsanitize=address -fno-optimize-sibling-calls -fsanitize-address-use-after-scope -fno-omit-frame-pointer -g -O1
+            #                    # -fsanitize=leak -fno-omit-frame-pointer -g -O1
+            #                    # -fsanitize=thread -g -O1
+            #                    # -fsanitize=memory -fno-optimize-sibling-calls -fsanitize-memory-track-origins=2 -fno-omit-frame-pointer -g -O2
+            #                    -fsanitize=undefined -fno-sanitize=vptr
+            #
+            #                    # address(AddressSanitizer), leak(LeakSanitizer), thread(ThreadSanitizer), undefined(UndefinedBehaviorSanitizer), memory(MemorySanitizer) 
+            #                    # [additional_options]: -fno-omit-frame-pointer, fsanitize-recover/fno-sanitize-recover, -fsanitize-blacklist, etc.
+            #                    # [-g] [-OX]
+            #                    )
+            #            if (NOT macOS)
+            #                target_compile_options(${_proj_name} PRIVATE
+            #                        -fsanitize=leak -fno-omit-frame-pointer
+            #                        )
+            #                target_link_options(${_proj_name} PRIVATE -fsanitize=address)
+            #            endif ()
+            #            target_link_options(${_proj_name} PRIVATE -fsanitize=address)
+        endif ()
+    endif ()
+
+
+    if (NOT define_example_program_ARG_FLEX AND NOT define_example_program_ARG_BISON)
+    else ()
+        debug_print_value(define_example_program_ARG_FLEX)
+        debug_print_value(define_example_program_ARG_BISON)
+        add_lexer_targets_to(${PROJ_NAME}
+                FLEX ${define_example_program_ARG_FLEX}
+                BISON ${define_example_program_ARG_BISON}
+                ${define_example_program_ARG_UNPARSED_ARGUMENTS}
+                )
+    endif ()
+
+endfunction()

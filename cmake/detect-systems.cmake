@@ -83,7 +83,7 @@ message(STATUS ">>> CMAKE_HOST_SYSTEM_NAME = ${CMAKE_HOST_SYSTEM_NAME}")
 message(STATUS ">>> DISTRO_NAME = ${DISTRO_NAME}")
 if (LINUX)
     message(STATUS ">>> Linux" " (Distro: ${DISTRO_NAME})" " FOUND")
-elseif (MAC)
+elseif (MAC OR APPLE)
     message(STATUS ">>> macOS" " FOUND")
 elseif (UNIX)
     message(STATUS ">>> Unix (BSD+,Unix+)" " FOUND")
@@ -92,16 +92,26 @@ elseif (MSVC)
 elseif (WIN32)
     message(STATUS ">>> Win32" " FOUND")
 else ()
-    message(STATUS ">>> Unknown" " FOUND")
+    message(STATUS ">>> Unknown System" " '${CMAKE_SYSTEM}' FOUND")
 endif ()
+
 if (MINGW)
-    message(STATUS ">>> MinGW" " FOUND")
+    message(STATUS ">>> MinGW / MSYS2" " FOUND")
+elseif (MSYS)
+    message(STATUS ">>> MSYS" " FOUND (${CMAKE_SYSTEM})")
 endif ()
 
+
+message(STATUS "BUILD_COMPILER_ID = ${CMAKE_CXX_COMPILER_ID}")
+
+
+string(TIMESTAMP BUILD_TIMESTAMP "%Y-%m-%dT%H:%M:%SZ")
+message(STATUS ">>> BUILD_TIMESTAMP = ${BUILD_TIMESTAMP}")
+
+
 #
 #
 #
 
 
-message(STATUS ">>> CMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}")
 

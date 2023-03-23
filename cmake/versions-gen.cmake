@@ -38,6 +38,7 @@ macro(gen_versions PROJ_NAME PROJECT_MACRO_PREFIX VERSION_H_NAME CONFIG_H_NAME A
         set(xCONFIG_BASE_IN ${CMAKE_SOURCE_DIR}/${CMAKE_SCRIPTS}/config-base.h.in)
     endif ()
     message("Using version.in file: ${xVERSION_IN}, ARCHIVE_NAME = ${ARCHIVE_NAME}, PROJECT_MACRO_PREFIX = ${PROJECT_MACRO_PREFIX}")
+    message("                       CMAKE_SOURCE_DIR = ${CMAKE_SOURCE_DIR}")
 
     if (EXISTS "${CMAKE_SOURCE_DIR}/.git")
 
@@ -56,21 +57,18 @@ macro(gen_versions PROJ_NAME PROJECT_MACRO_PREFIX VERSION_H_NAME CONFIG_H_NAME A
                 OUTPUT_VARIABLE GIT_LAST_TAG_LONG
                 OUTPUT_STRIP_TRAILING_WHITESPACE
         )
-
         execute_process(
                 COMMAND git rev-parse --abbrev-ref HEAD
                 WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
                 OUTPUT_VARIABLE GIT_BRANCH
                 OUTPUT_STRIP_TRAILING_WHITESPACE
         )
-
         execute_process(
                 COMMAND git rev-parse HEAD
                 WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
                 OUTPUT_VARIABLE GIT_COMMIT_HASH
                 OUTPUT_STRIP_TRAILING_WHITESPACE
         )
-
         execute_process(
                 COMMAND git log -1 --format=%h
                 WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
@@ -78,9 +76,9 @@ macro(gen_versions PROJ_NAME PROJECT_MACRO_PREFIX VERSION_H_NAME CONFIG_H_NAME A
                 OUTPUT_STRIP_TRAILING_WHITESPACE
         )
     else ()
-        set(GIT_BRANCH "")
-        set(GIT_LAST_TAG "")
-        set(GIT_LAST_TAG_LONG "")
+        set(GIT_BRANCH "master")
+        set(GIT_LAST_TAG "HEAD")
+        set(GIT_LAST_TAG_LONG "HEAD")
         set(GIT_COMMIT_HASH "")
         set(GIT_COMMIT_REV "")
     endif ()
@@ -92,9 +90,8 @@ macro(gen_versions PROJ_NAME PROJECT_MACRO_PREFIX VERSION_H_NAME CONFIG_H_NAME A
     #    endif ()
 
     message(STATUS "- Git current branch:  ${GIT_BRANCH}")
-    message(STATUS "- Git last tag:        ${GIT_LAST_TAG}")
-    message(STATUS "- Git commit hash:     ${GIT_COMMIT_HASH}")
-    message(STATUS "- Git commit revision: ${GIT_COMMIT_REV}")
+    message(STATUS "- Git last tags:       ${GIT_LAST_TAG}, Long: ${GIT_LAST_TAG_LONG}")
+    message(STATUS "- Git commit hash:     ${GIT_COMMIT_HASH}, revision: ${GIT_COMMIT_REV}")
 
     if (NOT "${CMAKE_GENERATED_DIR}")
     else ()
@@ -102,22 +99,31 @@ macro(gen_versions PROJ_NAME PROJECT_MACRO_PREFIX VERSION_H_NAME CONFIG_H_NAME A
         # we need CMAKE_GENERATED_DIR at present.
     endif ()
 
+    # include(CheckIncludeFile)
+    # include(CheckIncludeFiles)
+    # set(HAS_UNISTD_H 0)
+    # check_include_file("unistd.h" HAS_UNISTD_H)
+    # check_include_files("stdio.h;string.h" HAVE_STDIO_AND_STRING_H)
+    message(STATUS "- unistd.h checked:    HAS_UNISTD_H = ${HAS_UNISTD_H}")
+
+    set(_output_dir ${CMAKE_GENERATED_DIR})
+    set(_output_dir ${CMAKE_CURRENT_BINARY_DIR})
     if (EXISTS ${xVERSION_IN})
-        message(STATUS "Generating version.h from ${xVERSION_IN} to ${CMAKE_GENERATED_DIR} - Version ${PROJECT_VERSION}...")
+        message(STATUS "Generating version.h from ${xVERSION_IN} to ${_output_dir} - Version ${PROJECT_VERSION}...")
         configure_file(
                 ${xVERSION_IN}
-                ${CMAKE_GENERATED_DIR}/${VERSION_H_NAME}
+                ${_output_dir}/${VERSION_H_NAME}
         )
-        message(STATUS "Generated: ${CMAKE_GENERATED_DIR}/${VERSION_H_NAME}")
+        message(STATUS "Generated: ${_output_dir}/${VERSION_H_NAME}")
     endif ()
 
     if (EXISTS ${xCONFIG_BASE_IN})
-        message(STATUS "Generating ${CONFIG_H_NAME} from ${xCONFIG_BASE_IN} to ${CMAKE_GENERATED_DIR} - Version ${PROJECT_VERSION}...")
+        message(STATUS "Generating ${CONFIG_H_NAME} from ${xCONFIG_BASE_IN} to ${_output_dir} - Version ${PROJECT_VERSION}...")
         configure_file(
                 ${xCONFIG_BASE_IN}
-                ${CMAKE_GENERATED_DIR}/${CONFIG_H_NAME}
+                ${_output_dir}/${CONFIG_H_NAME}
         )
-        message(STATUS "Generated: ${CMAKE_GENERATED_DIR}/${CONFIG_H_NAME}")
+        message(STATUS "Generated: ${_output_dir}/${CONFIG_H_NAME}")
     endif ()
 
 

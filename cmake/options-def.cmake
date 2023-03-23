@@ -1,8 +1,12 @@
-#option(ENABLE_CLI_APP "Enable cli app" ON)
-
 if (EXISTS ${CMAKE_SOURCE_DIR}/.options.cmake)
     include(.options)
+    message(STATUS ">>> options decl file (.options.cmake) loaded")
 else ()
-    message("   options decl file (.options.cmake) ignored")
+    message(STATUS ">>> options decl file (.options.cmake) ignored")
     set(BASENAME prj)
+endif ()
+
+if (EXISTS ${CMAKE_SOURCE_DIR}/.options.local.cmake)
+    include(.options.local)
+    message(STATUS ">>> options.local decl file (.options.local.cmake) loaded")
 endif ()

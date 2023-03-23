@@ -31,8 +31,8 @@ set(CMAKE_GENERATED_DIR "${CMAKE_BINARY_DIR}/generated")
 mark_as_advanced(CMAKE_GENERATED_DIR)
 
 
-message("   CMAKE_SCRIPTS_DIR:          ${CMAKE_SCRIPTS_DIR}")
-message("   CMAKE_ROOT_DIR:             ${CMAKE_ROOT_DIR}")
+message("   > CMAKE_SCRIPTS_DIR:          ${CMAKE_SCRIPTS_DIR}")
+message("   > CMAKE_ROOT_DIR:             ${CMAKE_ROOT_DIR}")
 message("   > CMAKE_SOURCE_DIR:         ${CMAKE_SOURCE_DIR}")
 message("   > CMAKE_BINARY_DIR:         ${CMAKE_BINARY_DIR}")
 message("   > CMAKE_GENERATED_DIR:      ${CMAKE_GENERATED_DIR}")

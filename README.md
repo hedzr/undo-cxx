@@ -8,24 +8,21 @@
 
 ## Newest
 
-**WIP**
-
--   _0.2.2_, fixes arround the project files
--   0.2.1, first implementation of Undoable/Redoable
+- v0.2.3, upgrade cmake scripts
+- _v0.2.2_, fixes around the project files
+- v0.2.1, first implementation of Undoable/Redoable
 
 ## Features
 
--   Highly configurable/customizable
--   Undo/Redo subsystem
-    -   restricted non-linear undo (batch undo+erase+redo)
-    -   todo: full-functional non-linear
-    -   limitless undo/redo levels, or limited with `max_size(n)`
--   Bundled with Command subsystem
-    -   undoable/redoable
-    -   Composite command (`undo_cxx::composite_cmd_t<>`): composite multi-commands as one (groupable)
-    -   Composite memento (`undo_cxx::state_t<>`) for composite-command
-
----
+- Highly configurable/customizable
+- Undo/Redo subsystem
+  - restricted non-linear undo (batch undo+erase+redo)
+  - todo: full-functional non-linear
+  - limitless undo/redo levels, or limited with `max_size(n)`
+- Bundled with Command subsystem
+  - undoable/redoable
+  - Composite command (`undo_cxx::composite_cmd_t<>`): composite multi-commands as one (groupable)
+  - Composite memento (`undo_cxx::state_t<>`) for composite-command
 
 ## Examples
 

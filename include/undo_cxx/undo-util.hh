@@ -54,8 +54,13 @@ namespace undo_cxx {
 
 #if !defined(_MSC_VER)
     namespace detail {
+        template <class Arg, class Result>
+        struct unary_function {
+            typedef Arg argument_type;
+            typedef Result result_type;
+        };
         template<class T, bool = std::is_enum<T>::value>
-        struct __enum_id_gen : public std::unary_function<T, id_type> {
+        struct __enum_id_gen : public unary_function<T, id_type> {
             id_type operator()(T) const {
                 // typedef typename std::underlying_type<T>::type type;
                 constexpr id_type v = debug::type_name<T>();

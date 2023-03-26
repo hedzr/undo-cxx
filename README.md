@@ -8,6 +8,7 @@
 
 ## Newest
 
+- v0.2.5, upgrade undo-log.hh, undo-util.hh, undo-zcore.hh, and cxx-macros.cmake
 - v0.2.3, upgrade cmake scripts
 - _v0.2.2_, fixes around the project files
 - v0.2.1, first implementation of Undoable/Redoable

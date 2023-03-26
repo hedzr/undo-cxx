@@ -91,7 +91,7 @@ namespace undo_cxx::log {
             clr_verbose,
         };
         int matched{0};
-        for (size_t i = 0; i < sizeof(keys)/sizeof(keys[0]); i++) {
+        for (size_t i = 0; i < sizeof(keys) / sizeof(keys[0]); i++) {
           if (keys[i] == k) {
             matched = i;
             break;

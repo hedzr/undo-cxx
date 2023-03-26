@@ -26,39 +26,38 @@
 #include <stack>
 #include <vector>
 
-
 int test(int x, int y, int z) {
-    return x + y + z;
+  return x + y + z;
 }
 
 void test_partial() {
-    using namespace undo_cxx::util::cool;
-    std::cout << '\n';
+  using namespace undo_cxx::util::cool;
+  std::cout << '\n';
 
-    auto f = partial(test, 5, 3);
-    std::cout << f(7) << '\n';
+  auto f = partial(test, 5, 3);
+  std::cout << f(7) << '\n';
 
-    std::cout << partial(test)(5, 3, 7) << '\n';
-    std::cout << partial(test, 5)(3, 7) << '\n';
-    std::cout << partial(test, 5, 3)(7) << '\n';
+  std::cout << partial(test)(5, 3, 7) << '\n';
+  std::cout << partial(test, 5)(3, 7) << '\n';
+  std::cout << partial(test, 5, 3)(7) << '\n';
 }
 
 void test_curry() {
-    using namespace undo_cxx::util::cool;
-    std::cout << '\n';
+  using namespace undo_cxx::util::cool;
+  std::cout << '\n';
 
-    auto f = curry(test)(1);
-    auto g = f(2);
-    auto result = g(3);
-    auto result1 = curry(test)(1)(2)(3);
-    std::cout << "result:  " << result << '\n';
-    std::cout << "result1: " << result1 << '\n';
+  auto f = curry(test)(1);
+  auto g = f(2);
+  auto result = g(3);
+  auto result1 = curry(test)(1)(2)(3);
+  std::cout << "result:  " << result << '\n';
+  std::cout << "result1: " << result1 << '\n';
 }
 
 int main() {
 
-    test_partial();
-    test_curry();
+  test_partial();
+  test_curry();
 
-    return 0;
+  return 0;
 }

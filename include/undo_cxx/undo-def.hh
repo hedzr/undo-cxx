@@ -15,17 +15,15 @@
 #include "undo_cxx-version.hh"
 
 #if !defined(DEBUG) && defined(USE_DEBUG) && USE_DEBUG
-#define DEBUG  1
+#define DEBUG 1
 #endif
 #if !defined(_DEBUG) && defined(DEBUG)
 #define _DEBUG DEBUG
 #endif
 
-
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
 #define OS_WIN 1
 #endif
-
 
 #ifndef _UNUSED_DEFINED
 #define _UNUSED_DEFINED
@@ -54,7 +52,7 @@
  */
 template<typename... Args>
 inline void UNUSED([[maybe_unused]] Args &&...args) {
-    (void) (sizeof...(args));
+  (void) (sizeof...(args));
 }
 
 #elif __GNUC__ || _MSC_VER
@@ -73,32 +71,29 @@ inline void UNUSED([[maybe_unused]] Args &&...args) {
 
 #define ALL_UNUSED_IMPL_(nargs) UNUSED##nargs
 #define ALL_UNUSED_IMPL(nargs) ALL_UNUSED_IMPL_(nargs)
-#define UNUSED(...)                           \
-    ALL_UNUSED_IMPL(VA_NUM_ARGS(__VA_ARGS__)) \
-    (__VA_ARGS__)
+#define UNUSED(...)                         \
+  ALL_UNUSED_IMPL(VA_NUM_ARGS(__VA_ARGS__)) \
+  (__VA_ARGS__)
 #endif
 
 #endif
 #endif //_UNUSED_DEFINED
 
-
 //
 
-
 #ifndef CLAZZ_NON_COPYABLE
-#define CLAZZ_NON_COPYABLE(clz)           \
-    clz(const clz &) = delete;            \
-    clz(clz &&) noexcept = delete;        \
-    clz &operator=(const clz &) = delete; \
-    clz &operator=(clz &&) noexcept = delete
+#define CLAZZ_NON_COPYABLE(clz)         \
+  clz(const clz &) = delete;            \
+  clz(clz &&) noexcept = delete;        \
+  clz &operator=(const clz &) = delete; \
+  clz &operator=(clz &&) noexcept = delete
 #endif
 
 #ifndef CLAZZ_NON_MOVEABLE
-#define CLAZZ_NON_MOVEABLE(clz)    \
-    clz(clz &&) noexcept = delete; \
-    clz &operator=(clz &&) noexcept = delete
+#define CLAZZ_NON_MOVEABLE(clz)  \
+  clz(clz &&) noexcept = delete; \
+  clz &operator=(clz &&) noexcept = delete
 #endif
-
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -115,24 +110,24 @@ inline void UNUSED([[maybe_unused]] Args &&...args) {
 #include <time.h>
 namespace undo_cxx { namespace cross {
     inline void setenv(const char *__name, const char *__value, int __overwrite = 1) {
-        (void) (__overwrite);
-        std::ostringstream os;
-        os << __name << '=' << __value;
-        (void) _putenv(os.str().c_str());
+      (void) (__overwrite);
+      std::ostringstream os;
+      os << __name << '=' << __value;
+      (void) _putenv(os.str().c_str());
     }
 
     inline time_t time(time_t *_t = nullptr) {
-        return ::time(_t);
+      return ::time(_t);
     }
     // BEWRAE: this is a thread-unsafe routine, it's just for the simple scene.
     inline struct tm *gmtime(time_t const *_t = nullptr) {
-        static struct tm _tm {};
-        if (!_t) {
-            time_t vt = time();
-            gmtime_s(&_tm, &vt);
-        } else
-            gmtime_s(&_tm, _t);
-        return &_tm;
+      static struct tm _tm {};
+      if (!_t) {
+        time_t vt = time();
+        gmtime_s(&_tm, &vt);
+      } else
+        gmtime_s(&_tm, _t);
+      return &_tm;
     }
 
     template<class T>
@@ -146,18 +141,18 @@ namespace undo_cxx { namespace cross {
 #include <time.h>
 namespace undo_cxx { namespace cross {
     inline void setenv(const char *__name, const char *__value, int __overwrite = 1) {
-        ::setenv(__name, __value, __overwrite);
+      ::setenv(__name, __value, __overwrite);
     }
 
     inline time_t time(time_t *_t = nullptr) {
-        return std::time(_t);
+      return std::time(_t);
     }
     inline struct tm *gmtime(time_t const *_t = nullptr) {
-        if (!_t) {
-            time_t vt = time();
-            return std::gmtime(&vt);
-        }
-        return std::gmtime(_t);
+      if (!_t) {
+        time_t vt = time();
+        return std::gmtime(&vt);
+      }
+      return std::gmtime(_t);
     }
 
     template<class T>
@@ -166,6 +161,5 @@ namespace undo_cxx { namespace cross {
     inline T min(T a, T b) { return std::min(a, b); }
 }} // namespace undo_cxx::cross
 #endif
-
 
 #endif //UNDO_CXX_UNDO_DEF_HH

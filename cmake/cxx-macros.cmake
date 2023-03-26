@@ -489,7 +489,6 @@ macro(define_cxx_library_project name)
         endif ()
 
 
-
         set(_lib_inc_dir include)
         if (NOT "${diclp_ARG_INSTALL_INC_DIR}" STREQUAL "")
             set(_lib_inc_dir "${diclp_ARG_INSTALL_INC_DIR}")
@@ -505,9 +504,8 @@ macro(define_cxx_library_project name)
             set(${PROJ_NAME}_PUBLIC_HEADER_DIR "${_lib_inc_dir}")
             debug_print_value(${PROJ_NAME}_PUBLIC_HEADER_DIR)
         endif ()
-        
-        
-        
+
+
         # target_compile_definitions(${PROJ_NAME} INTERFACE
         # ${PROJ_PREFIX}_ENABLE_ASSERTIONS=${_${PROJ_NAME}_enable_assertions}
         # ${PROJ_PREFIX}_ENABLE_PRECONDITION_CHECKS=${_${PROJ_NAME}_enable_precondition_checks}
@@ -655,7 +653,7 @@ set(${PROJ_NAME}_LIBRARIES ${PROJ_NAME})
                     # Find all the public headers
                     set(MY_PUBLIC_HEADER_DIR "${_lib_inc_dir}")
                     debug_print_value(MY_PUBLIC_HEADER_DIR)
-                    
+
                     file(GLOB_RECURSE MY_PUBLIC_HEADERS ${MY_PUBLIC_HEADER_DIR}/*.hh)
                     debug_print_list_value(MY_PUBLIC_HEADER_DIR)
                     debug_print_value(PROJECT_SOURCE_DIR)

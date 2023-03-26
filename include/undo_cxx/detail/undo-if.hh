@@ -37,68 +37,68 @@
 #include <memory>
 #include <string>
 
-
 #if !defined(__TRAITS_VOIT_T_DEFINED)
 #define __TRAITS_VOIT_T_DEFINED
 // ------------------------- void_t
 namespace undo_cxx::traits {
 #if (__cplusplus > 201402L)
-    using std::void_t; // C++17 or later
+  using std::void_t; // C++17 or later
 #else
-    // template<class...>
-    // using void_t = void;
+  // template<class...>
+  // using void_t = void;
 
-    template<typename... T>
-    struct make_void { using type = void; };
-    template<typename... T>
-    using void_t = typename make_void<T...>::type;
+  template<typename... T>
+  struct make_void {
+    using type = void;
+  };
+  template<typename... T>
+  using void_t = typename make_void<T...>::type;
 #endif
 } // namespace undo_cxx::traits
 #endif // __TRAITS_VOIT_T_DEFINED
-
 
 #if !defined(__TRAITS_IS_DETECTED_DEFINED)
 #define __TRAITS_IS_DETECTED_DEFINED
 // ------------------------- is_detected
 namespace undo_cxx::traits {
-    template<class, template<class> class, class = void_t<>>
-    struct detect : std::false_type {};
+  template<class, template<class> class, class = void_t<>>
+  struct detect : std::false_type {};
 
-    template<class T, template<class> class Op>
-    struct detect<T, Op, void_t<Op<T>>> : std::true_type {};
+  template<class T, template<class> class Op>
+  struct detect<T, Op, void_t<Op<T>>> : std::true_type {};
 
-    template<class T, class Void, template<class...> class Op, class... Args>
-    struct detector {
-        using value_t = std::false_type;
-        using type = T;
-    };
+  template<class T, class Void, template<class...> class Op, class... Args>
+  struct detector {
+    using value_t = std::false_type;
+    using type = T;
+  };
 
-    template<class T, template<class...> class Op, class... Args>
-    struct detector<T, void_t<Op<Args...>>, Op, Args...> {
-        using value_t = std::true_type;
-        using type = Op<Args...>;
-    };
+  template<class T, template<class...> class Op, class... Args>
+  struct detector<T, void_t<Op<Args...>>, Op, Args...> {
+    using value_t = std::true_type;
+    using type = Op<Args...>;
+  };
 
-    struct nonesuch final {
-        nonesuch() = delete;
-        ~nonesuch() = delete;
-        nonesuch(const nonesuch &) = delete;
-        void operator=(const nonesuch &) = delete;
-    };
+  struct nonesuch final {
+    nonesuch() = delete;
+    ~nonesuch() = delete;
+    nonesuch(const nonesuch &) = delete;
+    void operator=(const nonesuch &) = delete;
+  };
 
-    template<class T, template<class...> class Op, class... Args>
-    using detected_or = detector<T, void, Op, Args...>;
+  template<class T, template<class...> class Op, class... Args>
+  using detected_or = detector<T, void, Op, Args...>;
 
-    template<class T, template<class...> class Op, class... Args>
-    using detected_or_t = typename detected_or<T, Op, Args...>::type;
+  template<class T, template<class...> class Op, class... Args>
+  using detected_or_t = typename detected_or<T, Op, Args...>::type;
 
-    template<template<class...> class Op, class... Args>
-    using detected = detected_or<nonesuch, Op, Args...>;
+  template<template<class...> class Op, class... Args>
+  using detected = detected_or<nonesuch, Op, Args...>;
 
-    template<template<class...> class Op, class... Args>
-    using detected_t = typename detected<Op, Args...>::type;
+  template<template<class...> class Op, class... Args>
+  using detected_t = typename detected<Op, Args...>::type;
 
-    /**
+  /**
      * @brief another std::is_detected
      * @details For example:
      * @code{c++}
@@ -112,17 +112,17 @@ namespace undo_cxx::traits {
      * constexpr bool is_copy_assignable_v = is_copy_assignable&lt;T>::value;
      * @endcode
      */
-    template<template<class...> class Op, class... Args>
-    using is_detected = typename detected<Op, Args...>::value_t;
+  template<template<class...> class Op, class... Args>
+  using is_detected = typename detected<Op, Args...>::value_t;
 
-    template<template<class...> class Op, class... Args>
-    constexpr bool is_detected_v = is_detected<Op, Args...>::value;
+  template<template<class...> class Op, class... Args>
+  constexpr bool is_detected_v = is_detected<Op, Args...>::value;
 
-    template<class T, template<class...> class Op, class... Args>
-    using is_detected_exact = std::is_same<T, detected_t<Op, Args...>>;
+  template<class T, template<class...> class Op, class... Args>
+  using is_detected_exact = std::is_same<T, detected_t<Op, Args...>>;
 
-    template<class To, template<class...> class Op, class... Args>
-    using is_detected_convertible = std::is_convertible<detected_t<Op, Args...>, To>;
+  template<class To, template<class...> class Op, class... Args>
+  using is_detected_convertible = std::is_convertible<detected_t<Op, Args...>, To>;
 
 #if 0
     // Proposing Standard Library Support for the C++ Detection Idiom, v2
@@ -157,7 +157,7 @@ namespace undo_cxx::traits {
 
 // ------------------------- has_string
 namespace undo_cxx::traits {
-    /**
+  /**
      * @brief test for the prototype: `std::string to_string()`
      * @tparam T 
      * @details For example:
@@ -171,50 +171,49 @@ namespace undo_cxx::traits {
      *         &lt;&lt; has_string&lt;wrong_string&gt;::value &lt;&lt; '\n';
      * @endcode
      */
-    template<typename T>
-    class has_string {
-        template<typename U>
-        static constexpr std::false_type test(...) { return {}; }
-        template<typename U>
-        static constexpr auto test(U *u) ->
-                typename std::is_same<std::string, decltype(u->to_string())>::type { return {}; }
+  template<typename T>
+  class has_string {
+    template<typename U>
+    static constexpr std::false_type test(...) { return {}; }
+    template<typename U>
+    static constexpr auto test(U *u) ->
+        typename std::is_same<std::string, decltype(u->to_string())>::type { return {}; }
 
-    public:
-        static constexpr bool value = test<T>(nullptr);
-    };
+  public:
+    static constexpr bool value = test<T>(nullptr);
+  };
 
+  template<typename T>
+  using toString_t = decltype(std::declval<T &>().toString());
 
-    template<typename T>
-    using toString_t = decltype(std::declval<T &>().toString());
-
-    /**
+  /**
      * @brief test for the prototype: `std::string toString()`
      * @tparam T 
      */
-    template<typename T>
-    constexpr inline bool has_toString = is_detected_v<toString_t, T>;
+  template<typename T>
+  constexpr inline bool has_toString = is_detected_v<toString_t, T>;
 
-    template<typename T>
-    using to_string_t = decltype(std::declval<T &>().to_string());
+  template<typename T>
+  using to_string_t = decltype(std::declval<T &>().to_string());
 
-    /**
+  /**
      * @brief test for the prototype: `std::string to_string()`
      * @tparam T 
      */
-    template<typename T>
-    constexpr inline bool has_to_string = is_detected_v<to_string_t, T>;
+  template<typename T>
+  constexpr inline bool has_to_string = is_detected_v<to_string_t, T>;
 
 } // namespace undo_cxx::traits
 
 // ------------------------- has_member
 namespace undo_cxx::traits {
-    template<typename T, typename F>
-    constexpr inline auto has_member_impl(F &&f) -> decltype(f(std::declval<T>()), true) { return true; }
+  template<typename T, typename F>
+  constexpr inline auto has_member_impl(F &&f) -> decltype(f(std::declval<T>()), true) { return true; }
 
-    template<typename>
-    constexpr inline bool has_member_impl(...) { return false; }
+  template<typename>
+  constexpr inline bool has_member_impl(...) { return false; }
 
-    /**
+  /**
      * @brief 
      * @details For example:
      * @code{c++}
@@ -237,13 +236,13 @@ namespace undo_cxx::traits {
 // has_size_v, has_empty_v,
 namespace undo_cxx::traits {
 
-    template<typename T, typename = void>
-    struct has_begin : std::false_type {};
+  template<typename T, typename = void>
+  struct has_begin : std::false_type {};
 
-    template<typename T>
-    struct has_begin<T, decltype(void(std::declval<T &>().begin()))> : std::true_type {};
+  template<typename T>
+  struct has_begin<T, decltype(void(std::declval<T &>().begin()))> : std::true_type {};
 
-    /**
+  /**
      * @brief test for member function: `RET begin()`
      * @tparam T 
      * @details For example:
@@ -259,167 +258,164 @@ namespace undo_cxx::traits {
      * }
      * @endcode
      */
-    template<typename T>
-    constexpr inline bool has_begin_v = has_begin<T>::value;
+  template<typename T>
+  constexpr inline bool has_begin_v = has_begin<T>::value;
 
-    template<typename T, typename = void>
-    struct has_end : std::false_type {};
+  template<typename T, typename = void>
+  struct has_end : std::false_type {};
 
-    template<typename T>
-    struct has_end<T, decltype(void(std::declval<T &>().end()))> : std::true_type {};
+  template<typename T>
+  struct has_end<T, decltype(void(std::declval<T &>().end()))> : std::true_type {};
 
-    template<typename T>
-    constexpr inline bool has_end_v = has_end<T>::value;
+  template<typename T>
+  constexpr inline bool has_end_v = has_end<T>::value;
 
-
-    /**
+  /**
      * @brief test subscript operator `[]`
      * @code{c++}
      * using a = subscript_t&lt; std::vector&lt;int>, size_t >;
      * using b = subscript_t&lt; std::vector&lt;int>, int >;
      * @endcode
      */
-    // template<typename T, typename Index>
-    // using subscript_t = decltype(std::declval<T>()[std::declval<Index>()]);
-    //
-    // template<class T, class Index = std::size_t, class = void>
-    // constexpr bool has_op_subscript{false};
-    //
-    // template<class T, class Index = std::size_t>
-    // constexpr bool has_op_subscript<T, void_t<subscript_t<T,Index>>>{true};
+  // template<typename T, typename Index>
+  // using subscript_t = decltype(std::declval<T>()[std::declval<Index>()]);
+  //
+  // template<class T, class Index = std::size_t, class = void>
+  // constexpr bool has_op_subscript{false};
+  //
+  // template<class T, class Index = std::size_t>
+  // constexpr bool has_op_subscript<T, void_t<subscript_t<T,Index>>>{true};
 
 #if defined(__clang__) // gcc 10.x failed, 11.x ok; msvc failed;
-    template<typename T, typename Ret, typename Index>
-    using subscript_t = std::integral_constant < Ret (T::*)(Index),
-          &T::operator[]>;
+  template<typename T, typename Ret, typename Index>
+  using subscript_t = std::integral_constant < Ret (T::*)(Index),
+        &T::operator[]>;
 
-    template<typename T, typename Ret, typename Index>
-    using has_subscript = is_detected<subscript_t, T, Ret, Index>;
+  template<typename T, typename Ret, typename Index>
+  using has_subscript = is_detected<subscript_t, T, Ret, Index>;
 
-    template<typename T, typename Ret, typename Index>
-    constexpr inline bool has_subscript_v = has_subscript<T, Ret, Index>::value;
+  template<typename T, typename Ret, typename Index>
+  constexpr inline bool has_subscript_v = has_subscript<T, Ret, Index>::value;
 
 #if !defined(__GNUC__) // gcc 10.x failed, 11.x ok,
-    static_assert(has_subscript<std::vector<int>, int &, size_t>::value == true);
+  static_assert(has_subscript<std::vector<int>, int &, size_t>::value == true);
 #endif
-    static_assert(!has_subscript<std::vector<int>, int &, int>::value);
+  static_assert(!has_subscript<std::vector<int>, int &, int>::value);
 #endif
 
-    // template <typename T, typename = void>
-    // struct has_push : std::false_type {};
-    //
-    // template <typename T, typename ...Args>
-    // struct has_push<T, decltype(void(std::declval<T &>().push()))> : std::true_type {};
+  // template <typename T, typename = void>
+  // struct has_push : std::false_type {};
+  //
+  // template <typename T, typename ...Args>
+  // struct has_push<T, decltype(void(std::declval<T &>().push()))> : std::true_type {};
 
-    // C++20
-    //
-    // template<typename Callable, typename... Args, typename = decltype(declval<Callable>()(declval<Args>()...))>
-    // std::true_type is_callable_impl(Callable, Args...) { return {}; }
-    //
-    // std::false_type is_callable_impl(...) { return {}; }
-    //
-    // template<typename... Args, typename Callable>
-    // constexpr bool is_callable(Callable callable) {
-    //     return decltype(is_callable_impl(callable, declval<Args>()...)){};
-    // }
+  // C++20
+  //
+  // template<typename Callable, typename... Args, typename = decltype(declval<Callable>()(declval<Args>()...))>
+  // std::true_type is_callable_impl(Callable, Args...) { return {}; }
+  //
+  // std::false_type is_callable_impl(...) { return {}; }
+  //
+  // template<typename... Args, typename Callable>
+  // constexpr bool is_callable(Callable callable) {
+  //     return decltype(is_callable_impl(callable, declval<Args>()...)){};
+  // }
 
-    // C++20
-    //
-    // template<typename T>
-    // concept has_toString = requires(const T &t) {
-    //     t.toString();
-    // };
-    //
-    // template<typename T>
-    // std::string optionalToString(const T &obj) {
-    //     if constexpr (has_toString<T>)
-    //         return obj.toString();
-    //     else
-    //         return "toString not defined";
-    // }
+  // C++20
+  //
+  // template<typename T>
+  // concept has_toString = requires(const T &t) {
+  //     t.toString();
+  // };
+  //
+  // template<typename T>
+  // std::string optionalToString(const T &obj) {
+  //     if constexpr (has_toString<T>)
+  //         return obj.toString();
+  //     else
+  //         return "toString not defined";
+  // }
 
-    // C++17 with <experimental/type_traits>
-    //
-    // template<typename T>
-    // using toString_t = decltype(std::declval<T &>().toString());
-    //
-    // template<typename T>
-    // constexpr bool has_toString = std::is_detected_v<toString_t, T>;
+  // C++17 with <experimental/type_traits>
+  //
+  // template<typename T>
+  // using toString_t = decltype(std::declval<T &>().toString());
+  //
+  // template<typename T>
+  // constexpr bool has_toString = std::is_detected_v<toString_t, T>;
 
-    template<class T, class = void>
-    constexpr inline bool has_push_v{false};
+  template<class T, class = void>
+  constexpr inline bool has_push_v{false};
 
-    template<class T>
-    constexpr inline bool has_push_v<T, void_t<decltype(std::declval<T>().push(std::declval<typename std::decay_t<T>::value_type>()))>>{true};
+  template<class T>
+  constexpr inline bool has_push_v<T, void_t<decltype(std::declval<T>().push(std::declval<typename std::decay_t<T>::value_type>()))>>{true};
 
+  template<class T, class = void>
+  constexpr inline bool has_pop_v{false};
 
-    template<class T, class = void>
-    constexpr inline bool has_pop_v{false};
+  template<class T>
+  constexpr inline bool has_pop_v<T, void_t<decltype(std::declval<T>().pop())>>{true};
 
-    template<class T>
-    constexpr inline bool has_pop_v<T, void_t<decltype(std::declval<T>().pop())>>{true};
+  template<typename T>
+  struct has_top_func {
+    template<typename U>
+    static constexpr decltype(std::declval<U>().top(), bool())
+    tester(int) { return true; }
 
-    template<typename T>
-    struct has_top_func {
-        template<typename U>
-        static constexpr decltype(std::declval<U>().top(), bool())
-        tester(int) { return true; }
+    template<typename U>
+    static constexpr bool tester(...) { return false; }
 
-        template<typename U>
-        static constexpr bool tester(...) { return false; }
+    static constexpr bool value = tester<T>(int());
+  };
 
-        static constexpr bool value = tester<T>(int());
-    };
+  template<class T, class = void>
+  constexpr inline bool has_top_v{false};
 
-    template<class T, class = void>
-    constexpr inline bool has_top_v{false};
+  template<class T>
+  constexpr inline bool has_top_v<T, void_t<decltype(std::declval<T>().top())>>{true};
 
-    template<class T>
-    constexpr inline bool has_top_v<T, void_t<decltype(std::declval<T>().top())>>{true};
+  // template<class T, class = void>
+  // constexpr bool has_emplace{false};
+  //
+  // template<class T>
+  // constexpr bool has_emplace<T, void_t<decltype(std::declval<T>().has_emplace(std::declval<typename std::decay_t<T>::value_type>()))>>{true};
 
+  template<typename T, typename = void>
+  struct has_emplace_back : std::false_type {};
 
-    // template<class T, class = void>
-    // constexpr bool has_emplace{false};
-    //
-    // template<class T>
-    // constexpr bool has_emplace<T, void_t<decltype(std::declval<T>().has_emplace(std::declval<typename std::decay_t<T>::value_type>()))>>{true};
+  template<typename T>
+  struct has_emplace_back<T, void_t<decltype(std::declval<T>().emplace_back(std::declval<typename T::value_type>()))>> : std::true_type {};
 
-    template<typename T, typename = void>
-    struct has_emplace_back : std::false_type {};
+  template<typename T>
+  constexpr inline bool has_emplace_back_v = has_emplace_back<T>::value;
 
-    template<typename T>
-    struct has_emplace_back<T, void_t<decltype(std::declval<T>().emplace_back(std::declval<typename T::value_type>()))>> : std::true_type {};
+  template<typename T, typename = void>
+  struct has_emplace : std::false_type {};
 
-    template<typename T>
-    constexpr inline bool has_emplace_back_v = has_emplace_back<T>::value;
+  template<typename T>
+  struct has_emplace<T, void_t<decltype(std::declval<T>().emplace(std::declval<typename T::value_type>()))>> : std::true_type {};
 
-    template<typename T, typename = void>
-    struct has_emplace : std::false_type {};
+  template<typename T>
+  constexpr inline bool has_emplace_v = has_emplace<T>::value;
 
-    template<typename T>
-    struct has_emplace<T, void_t<decltype(std::declval<T>().emplace(std::declval<typename T::value_type>()))>> : std::true_type {};
+  // template<typename T, typename = void>
+  // struct has_emplace_variadic : std::false_type {};
+  //
+  // /**
+  //  * @brief not yet!!
+  //  * @tparam T
+  //  */
+  // template<typename T>
+  // struct has_emplace_variadic<T, void_t<decltype(std::declval<T>().emplace(std::declval<typename T::value_type>()))>> : std::true_type {};
 
-    template<typename T>
-    constexpr inline bool has_emplace_v = has_emplace<T>::value;
-
-    // template<typename T, typename = void>
-    // struct has_emplace_variadic : std::false_type {};
-    //
-    // /**
-    //  * @brief not yet!!
-    //  * @tparam T
-    //  */
-    // template<typename T>
-    // struct has_emplace_variadic<T, void_t<decltype(std::declval<T>().emplace(std::declval<typename T::value_type>()))>> : std::true_type {};
-
-    template<class T, typename... Arguments>
-    using emplace_variadic_t = std::conditional_t<
-            true,
-            decltype(std::declval<T>().emplace(std::declval<Arguments>()...)),
-            std::integral_constant<
-                    decltype(std::declval<T>().emplace(std::declval<Arguments>()...)) (T::*)(Arguments...),
-                    &T::emplace>>;
-    /**
+  template<class T, typename... Arguments>
+  using emplace_variadic_t = std::conditional_t<
+      true,
+      decltype(std::declval<T>().emplace(std::declval<Arguments>()...)),
+      std::integral_constant<
+          decltype(std::declval<T>().emplace(std::declval<Arguments>()...)) (T::*)(Arguments...),
+          &T::emplace>>;
+  /**
      * @brief test member function `emplace()` with variadic params
      * @tparam T 
      * @tparam Arguments 
@@ -429,72 +425,64 @@ namespace undo_cxx::traits {
      * static_assert(has_emplace_variadic_v&lt;C, C::const_iterator, int &&>);
      * @endcode
      */
-    template<class T, typename... Arguments>
-    constexpr inline bool has_emplace_variadic_v = is_detected_v<emplace_variadic_t, T, Arguments...>;
-    namespace detail {
-        using C = std::list<int>;
-        static_assert(has_emplace_variadic_v<C, C::const_iterator, int &&>);
-    } // namespace detail
+  template<class T, typename... Arguments>
+  constexpr inline bool has_emplace_variadic_v = is_detected_v<emplace_variadic_t, T, Arguments...>;
+  namespace detail {
+    using C = std::list<int>;
+    static_assert(has_emplace_variadic_v<C, C::const_iterator, int &&>);
+  } // namespace detail
 
+  //
 
-    //
+  //
 
-    //
+  template<class T, class = void>
+  constexpr inline bool has_push_back_v{false};
 
+  template<class T>
+  constexpr inline bool has_push_back_v<T, void_t<decltype(std::declval<T>().push_back(std::declval<typename std::decay_t<T>::value_type>()))>>{true};
 
-    template<class T, class = void>
-    constexpr inline bool has_push_back_v{false};
+  template<class T, class = void>
+  constexpr inline bool has_pop_back_v{false};
 
-    template<class T>
-    constexpr inline bool has_push_back_v<T, void_t<decltype(std::declval<T>().push_back(std::declval<typename std::decay_t<T>::value_type>()))>>{true};
+  template<class T>
+  constexpr inline bool has_pop_back_v<T, void_t<decltype(std::declval<T>().pop_back())>>{true};
 
+  template<class T, class = void>
+  constexpr inline bool has_push_front_v{false};
 
-    template<class T, class = void>
-    constexpr inline bool has_pop_back_v{false};
+  template<class T>
+  constexpr inline bool has_push_front_v<T, void_t<decltype(std::declval<T>().push_front(std::declval<typename std::decay_t<T>::value_type>()))>>{true};
 
-    template<class T>
-    constexpr inline bool has_pop_back_v<T, void_t<decltype(std::declval<T>().pop_back())>>{true};
+  template<class T, class = void>
+  constexpr inline bool has_pop_front_v{false};
 
-    template<class T, class = void>
-    constexpr inline bool has_push_front_v{false};
+  template<class T>
+  constexpr inline bool has_pop_front_v<T, void_t<decltype(std::declval<T>().pop_front())>>{true};
 
-    template<class T>
-    constexpr inline bool has_push_front_v<T, void_t<decltype(std::declval<T>().push_front(std::declval<typename std::decay_t<T>::value_type>()))>>{true};
+  template<class T, class = void>
+  constexpr inline bool has_max_size_v{false};
 
+  template<class T>
+  constexpr inline bool has_max_size_v<T, void_t<decltype(std::declval<T>().max_size())>>{true};
 
-    template<class T, class = void>
-    constexpr inline bool has_pop_front_v{false};
+  template<class T, class = void>
+  constexpr inline bool has_max_size_set_v{false};
 
-    template<class T>
-    constexpr inline bool has_pop_front_v<T, void_t<decltype(std::declval<T>().pop_front())>>{true};
+  template<class T>
+  constexpr inline bool has_max_size_set_v<T, void_t<decltype(std::declval<T>().max_size(std::declval<std::size_t>()))>>{true};
 
+  template<class T, class = void>
+  constexpr inline bool has_size_v{false};
 
-    template<class T, class = void>
-    constexpr inline bool has_max_size_v{false};
+  template<class T>
+  constexpr inline bool has_size_v<T, void_t<decltype(std::declval<T>().size())>>{true};
 
-    template<class T>
-    constexpr inline bool has_max_size_v<T, void_t<decltype(std::declval<T>().max_size())>>{true};
+  template<class T, class = void>
+  constexpr inline bool has_empty_v{false};
 
-
-    template<class T, class = void>
-    constexpr inline bool has_max_size_set_v{false};
-
-    template<class T>
-    constexpr inline bool has_max_size_set_v<T, void_t<decltype(std::declval<T>().max_size(std::declval<std::size_t>()))>>{true};
-
-
-    template<class T, class = void>
-    constexpr inline bool has_size_v{false};
-
-    template<class T>
-    constexpr inline bool has_size_v<T, void_t<decltype(std::declval<T>().size())>>{true};
-
-
-    template<class T, class = void>
-    constexpr inline bool has_empty_v{false};
-
-    template<class T>
-    constexpr inline bool has_empty_v<T, void_t<decltype(std::declval<T>().empty())>>{true};
+  template<class T>
+  constexpr inline bool has_empty_v<T, void_t<decltype(std::declval<T>().empty())>>{true};
 
 #if 0
     namespace detail {
@@ -513,23 +501,21 @@ namespace undo_cxx::traits {
 
 } // namespace undo_cxx::traits
 
-
 // ------------------------- is_duration, is_vector
 // is_container, is_stl_container, is_generic_container,
 // is_streamable,
 namespace undo_cxx::traits {
 
-
-    // template<class T, typename=void>
-    // struct is_duration :std::false_type {
-    // };
-    //
-    // template<class T,
-    //          typename std::enable_if<
-    //                  std::is_same<std::decay<T>::type,
-    //                                               std::duration<typename std::decay<T>::type::value_type,typename std::decay<T>::type::value_type>::type > >
-    // struct is_duration<T> :std::true_type {
-    // };
+  // template<class T, typename=void>
+  // struct is_duration :std::false_type {
+  // };
+  //
+  // template<class T,
+  //          typename std::enable_if<
+  //                  std::is_same<std::decay<T>::type,
+  //                                               std::duration<typename std::decay<T>::type::value_type,typename std::decay<T>::type::value_type>::type > >
+  // struct is_duration<T> :std::true_type {
+  // };
 
 #if 0
     template<class T, int = 0>
@@ -554,168 +540,161 @@ namespace undo_cxx::traits {
     struct is_duration<std::chrono::seconds> : std::true_type {};
 #else
 
-    template<typename T, typename _ = void>
-    struct is_duration : std::false_type {};
+  template<typename T, typename _ = void>
+  struct is_duration : std::false_type {};
 
-    template<typename... Ts>
-    struct is_duration_helper {};
+  template<typename... Ts>
+  struct is_duration_helper {};
 
-    template<typename T>
-    struct is_duration<
-            T,
-            std::conditional_t<
-                    false,
-                    is_duration_helper<
-                            typename T::rep,
-                            typename T::period,
-                            decltype(std::declval<T>().count()),
-                            decltype(std::declval<T>().zero()),
-                            decltype(std::declval<T>().min()),
-                            decltype(std::declval<T>().max())>,
-                    void>> : public std::true_type {};
+  template<typename T>
+  struct is_duration<
+      T,
+      std::conditional_t<
+          false,
+          is_duration_helper<
+              typename T::rep,
+              typename T::period,
+              decltype(std::declval<T>().count()),
+              decltype(std::declval<T>().zero()),
+              decltype(std::declval<T>().min()),
+              decltype(std::declval<T>().max())>,
+          void>> : public std::true_type {};
 
 #endif
 
-    //
+  //
 
+  template<class T>
+  struct is_vector {
+    using type = T;
+    constexpr static bool value = false;
+  };
 
-    template<class T>
-    struct is_vector {
-        using type = T;
-        constexpr static bool value = false;
-    };
+  template<class T>
+  struct is_vector<std::vector<T>> {
+    using type = std::vector<std::decay<T>>;
+    constexpr static bool value = true;
+  };
 
-    template<class T>
-    struct is_vector<std::vector<T>> {
-        using type = std::vector<std::decay<T>>;
-        constexpr static bool value = true;
-    };
+  // and the two "olbigatory" aliases
+  //
+  // Usages:
+  //     std::cout << std::boolalpha;
+  //     std::cout << is_vector_v<std::vector<int>> << '\n' ;
+  //     std::cout << is_vector_v<int> << '\n'
+  template<typename T>
+  inline constexpr bool is_vector_v = is_vector<T>::value;
 
-    // and the two "olbigatory" aliases
-    //
-    // Usages:
-    //     std::cout << std::boolalpha;
-    //     std::cout << is_vector_v<std::vector<int>> << '\n' ;
-    //     std::cout << is_vector_v<int> << '\n'
-    template<typename T>
-    inline constexpr bool is_vector_v = is_vector<T>::value;
-
-    template<typename T>
-    using is_vector_t = typename is_vector<T>::type;
-
+  template<typename T>
+  using is_vector_t = typename is_vector<T>::type;
 
 #if defined(ANOTHER_IS_VECTOR)
-    template<typename T, typename _ = void>
-    struct isVector : std::false_type {
-    };
+  template<typename T, typename _ = void>
+  struct isVector : std::false_type {
+  };
 
-    template<typename T>
-    struct isVector<T,
-                    typename std::enable_if<
-                            std::is_same<typename std::decay<T>::type,
-                                         std::vector<typename std::decay<T>::type::value_type, typename std::decay<T>::type::allocator_type>>::value>::type> : std::true_type {
-    };
+  template<typename T>
+  struct isVector<T,
+                  typename std::enable_if<
+                      std::is_same<typename std::decay<T>::type,
+                                   std::vector<typename std::decay<T>::type::value_type, typename std::decay<T>::type::allocator_type>>::value>::type> : std::true_type {
+  };
 #endif
 
+  template<typename T, typename = void>
+  struct is_container : std::false_type {};
 
-    template<typename T, typename = void>
-    struct is_container : std::false_type {};
+  template<typename T>
+  struct is_container<T, std::void_t<decltype(std::declval<T>().data()), decltype(std::declval<T>().size())>> : std::true_type {};
 
+  //specialize a type for all of the STL containers.
+  //
+  // better than is_container & is_vector, see also:
+  //   https://stackoverflow.com/questions/9407367/determine-if-a-type-is-an-stl-container-at-compile-time/31105859#31105859
+  namespace is_stl_container_impl {
     template<typename T>
-    struct is_container<T, std::void_t<decltype(std::declval<T>().data()), decltype(std::declval<T>().size())>> : std::true_type {};
+    struct is_stl_container : std::false_type {};
+    template<typename T, std::size_t N>
+    struct is_stl_container<std::array<T, N>> : std::true_type {};
+    template<typename... Args>
+    struct is_stl_container<std::vector<Args...>> : std::true_type {};
+    template<typename... Args>
+    struct is_stl_container<std::deque<Args...>> : std::true_type {};
+    template<typename... Args>
+    struct is_stl_container<std::list<Args...>> : std::true_type {};
+    template<typename... Args>
+    struct is_stl_container<std::forward_list<Args...>> : std::true_type {};
+    template<typename... Args>
+    struct is_stl_container<std::set<Args...>> : std::true_type {};
+    template<typename... Args>
+    struct is_stl_container<std::multiset<Args...>> : std::true_type {};
+    template<typename... Args>
+    struct is_stl_container<std::map<Args...>> : std::true_type {};
+    template<typename... Args>
+    struct is_stl_container<std::multimap<Args...>> : std::true_type {};
+    template<typename... Args>
+    struct is_stl_container<std::unordered_set<Args...>> : std::true_type {};
+    template<typename... Args>
+    struct is_stl_container<std::unordered_multiset<Args...>> : std::true_type {};
+    template<typename... Args>
+    struct is_stl_container<std::unordered_map<Args...>> : std::true_type {};
+    template<typename... Args>
+    struct is_stl_container<std::unordered_multimap<Args...>> : std::true_type {};
+    template<typename... Args>
+    struct is_stl_container<std::stack<Args...>> : std::true_type {};
+    template<typename... Args>
+    struct is_stl_container<std::queue<Args...>> : std::true_type {};
+    template<typename... Args>
+    struct is_stl_container<std::priority_queue<Args...>> : std::true_type {};
+  } // namespace is_stl_container_impl
 
-    //specialize a type for all of the STL containers.
-    //
-    // better than is_container & is_vector, see also:
-    //   https://stackoverflow.com/questions/9407367/determine-if-a-type-is-an-stl-container-at-compile-time/31105859#31105859
-    namespace is_stl_container_impl {
-        template<typename T>
-        struct is_stl_container : std::false_type {};
-        template<typename T, std::size_t N>
-        struct is_stl_container<std::array<T, N>> : std::true_type {};
-        template<typename... Args>
-        struct is_stl_container<std::vector<Args...>> : std::true_type {};
-        template<typename... Args>
-        struct is_stl_container<std::deque<Args...>> : std::true_type {};
-        template<typename... Args>
-        struct is_stl_container<std::list<Args...>> : std::true_type {};
-        template<typename... Args>
-        struct is_stl_container<std::forward_list<Args...>> : std::true_type {};
-        template<typename... Args>
-        struct is_stl_container<std::set<Args...>> : std::true_type {};
-        template<typename... Args>
-        struct is_stl_container<std::multiset<Args...>> : std::true_type {};
-        template<typename... Args>
-        struct is_stl_container<std::map<Args...>> : std::true_type {};
-        template<typename... Args>
-        struct is_stl_container<std::multimap<Args...>> : std::true_type {};
-        template<typename... Args>
-        struct is_stl_container<std::unordered_set<Args...>> : std::true_type {};
-        template<typename... Args>
-        struct is_stl_container<std::unordered_multiset<Args...>> : std::true_type {};
-        template<typename... Args>
-        struct is_stl_container<std::unordered_map<Args...>> : std::true_type {};
-        template<typename... Args>
-        struct is_stl_container<std::unordered_multimap<Args...>> : std::true_type {};
-        template<typename... Args>
-        struct is_stl_container<std::stack<Args...>> : std::true_type {};
-        template<typename... Args>
-        struct is_stl_container<std::queue<Args...>> : std::true_type {};
-        template<typename... Args>
-        struct is_stl_container<std::priority_queue<Args...>> : std::true_type {};
-    } // namespace is_stl_container_impl
+  //type trait to utilize the implementation type traits as well as decay the type
+  template<typename T>
+  struct is_stl_container {
+    static constexpr bool const value = is_stl_container_impl::is_stl_container<T>::value;
+  };
 
-    //type trait to utilize the implementation type traits as well as decay the type
-    template<typename T>
-    struct is_stl_container {
-        static constexpr bool const value = is_stl_container_impl::is_stl_container<T>::value;
-    };
+  // https://stackoverflow.com/questions/12042824/how-to-write-a-type-trait-is-container-or-is-vector
+  template<typename T, typename _ = void>
+  struct is_generic_container : std::false_type {};
 
+  template<typename... Ts>
+  struct is_generic_container_helper {};
 
-    // https://stackoverflow.com/questions/12042824/how-to-write-a-type-trait-is-container-or-is-vector
-    template<typename T, typename _ = void>
-    struct is_generic_container : std::false_type {};
+  template<typename T>
+  struct is_generic_container<
+      T,
+      std::conditional_t<
+          false,
+          is_generic_container_helper<
+              typename T::value_type,
+              typename T::size_type,
+              typename T::allocator_type,
+              typename T::iterator,
+              typename T::const_iterator,
+              decltype(std::declval<T>().size()),
+              decltype(std::declval<T>().begin()),
+              decltype(std::declval<T>().end()),
+              decltype(std::declval<T>().cbegin()),
+              decltype(std::declval<T>().cend())>,
+          void>> : public std::true_type {};
 
-    template<typename... Ts>
-    struct is_generic_container_helper {};
+  // SFINAE assertion class here: is_streamable
+  // original: https://stackoverflow.com/questions/22758291/how-can-i-detect-if-a-type-can-be-streamed-to-an-stdostream
+  template<typename T, typename S = std::ostream>
+  class is_streamable {
+    template<typename SS, typename TT>
+    static auto test(int)
+        -> decltype(std::declval<SS &>() << std::declval<TT>(), std::true_type());
 
-    template<typename T>
-    struct is_generic_container<
-            T,
-            std::conditional_t<
-                    false,
-                    is_generic_container_helper<
-                            typename T::value_type,
-                            typename T::size_type,
-                            typename T::allocator_type,
-                            typename T::iterator,
-                            typename T::const_iterator,
-                            decltype(std::declval<T>().size()),
-                            decltype(std::declval<T>().begin()),
-                            decltype(std::declval<T>().end()),
-                            decltype(std::declval<T>().cbegin()),
-                            decltype(std::declval<T>().cend())>,
-                    void>> : public std::true_type {};
+    template<typename, typename>
+    static auto test(...) -> std::false_type;
 
-
-    // SFINAE assertion class here: is_streamable
-    // original: https://stackoverflow.com/questions/22758291/how-can-i-detect-if-a-type-can-be-streamed-to-an-stdostream
-    template<typename T, typename S = std::ostream>
-    class is_streamable {
-        template<typename SS, typename TT>
-        static auto test(int)
-                -> decltype(std::declval<SS &>() << std::declval<TT>(), std::true_type());
-
-        template<typename, typename>
-        static auto test(...) -> std::false_type;
-
-    public:
-        static const bool value = decltype(test<S, T>(0))::value;
-    };
-
+  public:
+    static const bool value = decltype(test<S, T>(0))::value;
+  };
 
 } // namespace undo_cxx::traits
-
 
 #if 0
 

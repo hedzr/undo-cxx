@@ -13,10 +13,8 @@
 
 #pragma once
 
-
 #include "undo_cxx-config.hh"
 #include "undo_cxx-version.hh"
-
 
 #include "undo-def.hh"
 

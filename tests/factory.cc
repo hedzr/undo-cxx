@@ -29,34 +29,33 @@
 ///////////////////////////////////////////////////////////////////
 
 void test_9() {
-    using namespace undo_cxx;
-    using namespace std::string_view_literals;
-    namespace fct = undo_cxx::util::factory;
+  using namespace undo_cxx;
+  using namespace std::string_view_literals;
+  namespace fct = undo_cxx::util::factory;
 
-    struct Base {
-        virtual ~Base() {}
-        virtual void run() = 0;
-    };
-    struct A : public Base {
-        ~A() {}
-        void run() override { std::cout << 'A' << '\n'; }
-    };
-    struct B : public Base {
-        ~B() {}
-        void run() override { std::cout << 'B' << '\n'; }
-    };
-    struct C : public Base {
-        ~C() {}
-        void run() override { std::cout << 'C' << '\n'; }
-    };
+  struct Base {
+    virtual ~Base() {}
+    virtual void run() = 0;
+  };
+  struct A : public Base {
+    ~A() {}
+    void run() override { std::cout << 'A' << '\n'; }
+  };
+  struct B : public Base {
+    ~B() {}
+    void run() override { std::cout << 'B' << '\n'; }
+  };
+  struct C : public Base {
+    ~C() {}
+    void run() override { std::cout << 'C' << '\n'; }
+  };
 
-    using Factory = fct::factory<Base, A, B, C>;
+  using Factory = fct::factory<Base, A, B, C>;
 
-    std::cout << "id_name of 'A' = " << '"' << id_name<A>() << '"' << '\n';
-    auto p = Factory::create(id_name<A>());
-    p->run();
+  std::cout << "id_name of 'A' = " << '"' << id_name<A>() << '"' << '\n';
+  auto p = Factory::create(id_name<A>());
+  p->run();
 }
-
 
 ///////////////////////////////////////////////////////////////////
 
@@ -65,6 +64,6 @@ void test_9() {
 //
 
 int main() {
-    // test_1();
-    test_9();
+  // test_1();
+  test_9();
 }

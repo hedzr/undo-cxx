@@ -1,20 +1,32 @@
 
 #find_package(Threads REQUIRED)
 
+
 include(lexer-tools)
+
 
 macro(ensure_options_values PROJ_NAME PROJ_PREFIX)
     if (NOT DEFINED _${PROJ_NAME}_enable_assertions)
         if (DEFINED ${PROJ_PREFIX}_ENABLE_ASSERTIONS)
-            SET(_${PROJ_NAME}_enable_assertions 1)
+            if (${PROJ_PREFIX}_ENABLE_ASSERTIONS)
+                SET(_${PROJ_NAME}_enable_assertions 1)
+                # message("set _${PROJ_NAME}_enable_assertions to ${${PROJ_PREFIX}_ENABLE_ASSERTIONS}...")
+            else ()
+                SET(_${PROJ_NAME}_enable_assertions 0)
+            endif ()
         else ()
             SET(_${PROJ_NAME}_enable_assertions 0)
+            # message("set _${PROJ_NAME}_enable_assertions to 0")
         endif ()
     endif ()
 
     if (NOT DEFINED _${PROJ_NAME}_enable_precondition_checks)
         if (DEFINED ${PROJ_PREFIX}_ENABLE_PRECONDITION_CHECKS)
-            SET(_${PROJ_NAME}_enable_precondition_checks 1)
+            if (${PROJ_PREFIX}_ENABLE_PRECONDITION_CHECKS)
+                SET(_${PROJ_NAME}_enable_precondition_checks 1)
+            else ()
+                SET(_${PROJ_NAME}_enable_precondition_checks 0)
+            endif ()
         else ()
             SET(_${PROJ_NAME}_enable_precondition_checks 0)
         endif ()
@@ -22,7 +34,11 @@ macro(ensure_options_values PROJ_NAME PROJ_PREFIX)
 
     if (NOT DEFINED _${PROJ_NAME}_enable_thread_pool_ready_signal)
         if (DEFINED ${PROJ_PREFIX}_ENABLE_THREAD_POOL_READY_SIGNAL)
-            SET(_${PROJ_NAME}_enable_thread_pool_ready_signal 1)
+            if (${PROJ_PREFIX}_ENABLE_THREAD_POOL_READY_SIGNAL)
+                SET(_${PROJ_NAME}_enable_thread_pool_ready_signal 1)
+            else ()
+                SET(_${PROJ_NAME}_enable_thread_pool_ready_signal 0)
+            endif ()
         else ()
             SET(_${PROJ_NAME}_enable_thread_pool_ready_signal 0)
         endif ()
@@ -30,7 +46,11 @@ macro(ensure_options_values PROJ_NAME PROJ_PREFIX)
 
     if (NOT DEFINED _${PROJ_NAME}_enable_verbose_log)
         if (DEFINED ${PROJ_PREFIX}_ENABLE_VERBOSE_LOG)
-            SET(_${PROJ_NAME}_enable_verbose_log 1)
+            if (${PROJ_PREFIX}_ENABLE_VERBOSE_LOG)
+                SET(_${PROJ_NAME}_enable_verbose_log 1)
+            else ()
+                SET(_${PROJ_NAME}_enable_verbose_log 0)
+            endif ()
         else ()
             SET(_${PROJ_NAME}_enable_verbose_log 0)
         endif ()
@@ -38,21 +58,48 @@ macro(ensure_options_values PROJ_NAME PROJ_PREFIX)
 
     if (NOT DEFINED _${PROJ_NAME}_enable_thread_pool_dbgout)
         if ((DEFINED ${PROJ_PREFIX}_TEST_THREAD_POOL_DBGOUT) OR ${USE_DEBUG})
-            SET(_${PROJ_NAME}_enable_thread_pool_dbgout 1)
+            if (${PROJ_PREFIX}_TEST_THREAD_POOL_DBGOUT OR ${USE_DEBUG})
+                SET(_${PROJ_NAME}_enable_thread_pool_dbgout 1)
+            else ()
+                SET(_${PROJ_NAME}_enable_thread_pool_dbgout 0)
+            endif ()
         else ()
             SET(_${PROJ_NAME}_enable_thread_pool_dbgout 0)
         endif ()
     endif ()
 
     if (NOT DEFINED _${PROJ_NAME}_unit_test)
-        if ((DEFINED ${PROJ_PREFIX}_UNIT_TEST) OR ${USE_DEBUG})
-            SET(_${PROJ_NAME}_unit_test 1)
+		if ((DEFINED ${PROJ_PREFIX}_UNIT_TEST) OR ${USE_DEBUG} OR ${ENABLE_UINT_TESTS})
+			if ((${PROJ_PREFIX}_UNIT_TEST) OR ${USE_DEBUG} OR ${ENABLE_UINT_TESTS})
+				SET(_${PROJ_NAME}_unit_test 1)
+            else ()
+                SET(_${PROJ_NAME}_unit_test 0)
+            endif ()
         else ()
             SET(_${PROJ_NAME}_unit_test 0)
         endif ()
     endif ()
 
-    # message(STATUS "Config (CMAKE_BUILD_NAME): ${CMAKE_BUILD_NAME}")
+    set(_${PROJ_NAME}CXXDEFS "")
+    #    if (${_${PROJ_NAME}_enable_assertions})
+    list(APPEND _${PROJ_NAME}CXXDEFS ${PROJ_PREFIX}_ENABLE_ASSERTIONS=${_${PROJ_NAME}_enable_assertions})
+    #    endif ()
+    #    if (${_${PROJ_NAME}_enable_precondition_checks})
+    list(APPEND _${PROJ_NAME}CXXDEFS ${PROJ_PREFIX}_ENABLE_PRECONDITION_CHECKS=${_${PROJ_NAME}_enable_precondition_checks})
+    #    endif ()
+    #    if (${_${PROJ_NAME}_enable_thread_pool_ready_signal})
+    list(APPEND _${PROJ_NAME}CXXDEFS ${PROJ_PREFIX}_ENABLE_THREAD_POOL_READY_SIGNAL=${_${PROJ_NAME}_enable_thread_pool_ready_signal})
+    #    endif ()
+    #    if (${_${PROJ_NAME}_enable_verbose_log})
+    list(APPEND _${PROJ_NAME}CXXDEFS ${PROJ_PREFIX}_ENABLE_VERBOSE_LOG=${_${PROJ_NAME}_enable_verbose_log})
+    #    endif ()
+    #    if (${_${PROJ_NAME}_enable_thread_pool_dbgout})
+    list(APPEND _${PROJ_NAME}CXXDEFS ${PROJ_PREFIX}_TEST_THREAD_POOL_DBGOUT=${_${PROJ_NAME}_enable_thread_pool_dbgout})
+    #    endif ()
+    #    if (${_${PROJ_NAME}_unit_test})
+    list(APPEND _${PROJ_NAME}CXXDEFS ${PROJ_PREFIX}_UNIT_TEST=${_${PROJ_NAME}_unit_test})
+    #    endif ()
+    # message(STATUS "Config (${PROJ_NAME}) (${USE_DEBUG}) (${PROJ_PREFIX}_UNIT_TEST=${${PROJ_PREFIX}_UNIT_TEST}): ${_${PROJ_NAME}CXXDEFS}")
 endmacro()
 
 function(prepend var prefix)
@@ -67,17 +114,18 @@ endfunction(prepend)
 
 macro(define_cxx_executable_project name)
     set(dicep_PARAM_OPTIONS
-            INSTALL           # installable?
-            GENERATE_CONFIG   # generate config.h and version.h
-            BUILD_DOCS        # build docs with doxygen? 
-            )
+            INSTALL              # installable?
+            GENERATE_CONFIG      # generate config.h and version.h
+            BUILD_DOCS           # build docs with doxygen? 
+    )
     set(dicep_PARAM_ONE_VALUE_KEYWORDS
-            PREFIX            # PROJ_PREFIX
-            CXXSTANDARD       # such as CXXSTANDARD 17
-            OPTIONS           # cxx compiler options
-            VERSION           # default is ${PROJECT_VERSION}
-            )
+            PREFIX               # PROJ_PREFIX
+            CXXSTANDARD          # such as CXXSTANDARD 17
+            VERSION              # default is ${PROJECT_VERSION}
+    )
     set(dicep_PARAM_MULTI_VALUE_KEYWORDS
+            CXXFLAGS             # cxx compiler options
+            CXXDEFINITIONS
             HEADERS
             DETAILED_HEADERS
             SOURCES
@@ -85,7 +133,7 @@ macro(define_cxx_executable_project name)
             LIBRARIES
             FLEX
             BISON
-            )
+    )
 
     cmake_parse_arguments(
             dicep_ARG
@@ -99,7 +147,8 @@ macro(define_cxx_executable_project name)
      [INSTALL] [GENERATE_CONFIG] [BUILD_DOCS] 
      [PREFIX <c-macro-prefix-name>]
      [CXXSTANDARD 17/20/11]
-     [OPTIONS \"-Wall ...\"]
+     [CXXFLAGS -Wall [...]]
+	 [CXXDEFINITIONS A=1 B C=TRUE [...]]
      [VERSION \"\${PROJECT_VERSION}\"]
      [HEADERS a.hh b.hh ...]
      [DETAILED_HEADERS detail/a.hh...]
@@ -170,7 +219,7 @@ macro(define_cxx_executable_project name)
                     ${PROJ_NAME}-${dicep_ARG_VERSION}
                     ${CMAKE_SOURCE_DIR}/${CMAKE_SCRIPTS}/version.h.in
                     ${CMAKE_SOURCE_DIR}/${CMAKE_SCRIPTS}/config-base.h.in
-                    )
+            )
         endif ()
 
         list(APPEND dicep_ARG_INCLUDE_DIRECTORIES
@@ -183,14 +232,20 @@ macro(define_cxx_executable_project name)
 
         set_target_properties(${PROJ_NAME} PROPERTIES LINKER_LANGUAGE CXX)
 
-        target_compile_features(${PROJ_NAME} PRIVATE "cxx_std_${dicep_ARG_CXXSTANDARD}")
+        add_cxx_standard_to(${PROJ_NAME} ${dicep_ARG_CXXSTANDARD})
+        # target_compile_features(${PROJ_NAME} PRIVATE "cxx_std_${dicep_ARG_CXXSTANDARD}")
 
-        target_link_libraries(${PROJ_NAME} ${dicep_ARG_LIBRARIES})
+        target_compile_definitions(${PROJ_NAME} PRIVATE
+                ${_${PROJ_NAME}CXXDEFS}
+                ${dicep_ARG_CXXDEFINITIONS}
+        )
 
         target_compile_options(${PROJ_NAME} PRIVATE
+                -pedantic -Wall -Wextra -Wshadow -Werror -pthread
+                -Wdeprecated-declarations
                 # -fno-permissive # don't care about declaration of '<name>' changes meaning of '<name>'
-                "${dicep_ARG_OPTIONS}"
-                )
+                ${dicep_ARG_CXXFLAGS}
+        )
 
         target_include_directories(${PROJ_NAME}
                 PUBLIC
@@ -199,11 +254,13 @@ macro(define_cxx_executable_project name)
                 # $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
                 $<BUILD_INTERFACE:${CMAKE_GENERATED_DIR}>
                 $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
-                )
+        )
         target_include_directories(${PROJ_NAME}
                 SYSTEM PRIVATE
                 $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/include>
-                )
+        )
+
+        target_link_libraries(${PROJ_NAME} ${dicep_ARG_LIBRARIES})
 
         # message(STATUS "----------- s2 ------------")
         set(_defs ${${PROJ_PREFIX}_cxx_defs})
@@ -214,14 +271,14 @@ macro(define_cxx_executable_project name)
                     ${_defs}
 
                     # /D${PROJ_PREFIX}_UNIT_TEST=${_${PROJ_NAME}_unit_test}
-                    )
+            )
         else ()
             list(TRANSFORM _defs PREPEND -D)
             target_compile_options(${PROJ_NAME} INTERFACE
                     ${_defs}
 
                     # -D${PROJ_PREFIX}_UNIT_TEST=${_${PROJ_NAME}_unit_test}
-                    )
+            )
         endif ()
 
 
@@ -233,7 +290,7 @@ macro(define_cxx_executable_project name)
                     FLEX ${dicep_ARG_FLEX}
                     BISON ${dicep_ARG_BISON}
                     ${dicep_ARG_UNPARSED_ARGUMENTS}
-                    )
+            )
         endif ()
 
     endif ()
@@ -298,31 +355,33 @@ endmacro()
 #
 macro(define_cxx_library_project name)
     set(diclp_PARAM_OPTIONS
-            INTERFACE         # interface or public
+            INTERFACE            # interface or public
             STATIC
             SHARED
             MODULE
-            # PUBLIC            # interface or public
-            INSTALL           # installable?
-            GENERATE_CONFIG   # generate config.h and version.h
-            BUILD_DOCS        # build docs with doxygen? 
-            )
+            # PUBLIC             # interface or public
+            INSTALL              # installable?
+            GENERATE_CONFIG      # generate config.h and version.h
+            BUILD_DOCS           # build docs with doxygen? 
+    )
     set(diclp_PARAM_ONE_VALUE_KEYWORDS
-            PREFIX            # PROJ_PREFIX
-            CXXSTANDARD       # such as CXXSTANDARD 17
-            OPTIONS           # cxx compiler options
-            VERSION           # default is ${PROJECT_VERSION}
-            INSTALL_INC_DIR   # headers in <INSTALL_INC_DIR>/<Name> will be installed
-            )
+            PREFIX               # PROJ_PREFIX
+            CXXSTANDARD          # such as CXXSTANDARD 17
+            # OPTIONS            # cxx compiler options
+            VERSION              # default is ${PROJECT_VERSION}
+            INSTALL_INC_DIR      # headers in <INSTALL_INC_DIR>/<Name> will be installed
+    )
     set(diclp_PARAM_MULTI_VALUE_KEYWORDS
-            HEADERS
-            DETAILED_HEADERS
-            SOURCES
-            INCLUDE_DIRECTORIES
-            LIBRARIES
+            CXXFLAGS             # cxx compiler options
+            CXXDEFINITIONS
+            HEADERS              # public headers
+            DETAILED_HEADERS     # more headers
+            SOURCES              #  
+            INCLUDE_DIRECTORIES  #
+            LIBRARIES            #
             FLEX
             BISON
-            )
+    )
 
     cmake_parse_arguments(
             diclp_ARG
@@ -338,7 +397,8 @@ macro(define_cxx_library_project name)
      [INSTALL] [GENERATE_CONFIG] [BUILD_DOCS] 
      [PREFIX <c-macro-prefix-name>]
      [CXXSTANDARD 17/20/11]
-     [OPTIONS \"-Wall ...\"]
+     [CXXFLAGS -Wall [...]]    # cxx options, such as \"-Wdeprecated-declarations -Wno-unused-function\"
+	 [CXXDEFINITIONS A=1 B C=TRUE [...]]
      [VERSION \"\${PROJECT_VERSION}\"]
      [HEADERS a.hh b.hh ...]
      [DETAILED_HEADERS detail/a.hh...]
@@ -400,7 +460,7 @@ macro(define_cxx_library_project name)
         # debug_print_value(diclp_ARG_INSTALL)
         # debug_print_value(diclp_ARG_BUILD_DOCS)
         # debug_print_value(diclp_ARG_GENERATE_CONFIG)
-        # debug_print_value(diclp_ARG_OPTIONS)
+        # debug_print_value(diclp_ARG_CXXFLAGS)
         # debug_print_list_value(diclp_ARG_SOURCES)
 
         # set(CMAKE_CXX_STANDARD 17)
@@ -427,11 +487,20 @@ macro(define_cxx_library_project name)
                     ${PROJ_NAME}-${diclp_ARG_VERSION}
                     ${CMAKE_SOURCE_DIR}/${CMAKE_SCRIPTS}/version.h.in
                     ${CMAKE_SOURCE_DIR}/${CMAKE_SCRIPTS}/config-base.h.in
-                    )
+            )
         endif ()
 
         list(APPEND diclp_ARG_INCLUDE_DIRECTORIES
                 "${CMAKE_CURRENT_SOURCE_DIR}/include")
+        set(_diclp_opts
+                -pedantic -Wall -Wextra -Wshadow -Werror -pthread
+                -Wdeprecated-declarations
+
+                #-fno-permissive # don't care about declaration of '<name>' changes meaning of '<name>'
+                #-pedantic -Wall -Wextra -Werror=return-type -Wshadow=local -Wempty-body -fdiagnostics-color
+                #-D${PROJECT_MACRO_PREFIX}_UNIT_TEST=${_${PROJECT_MACRO_NAME}_unit_test}
+        )
+        list(APPEND _diclp_opts "${diclp_ARG_CXXFLAGS}")
 
         debug_print_value(PROJ_NAME)
         debug_print_value(PROJ_PREFIX)
@@ -446,10 +515,15 @@ macro(define_cxx_library_project name)
         if (NOT "${_diclp_type}" STREQUAL "INTERFACE")
             target_compile_features(${PROJ_NAME} PRIVATE "cxx_std_${diclp_ARG_CXXSTANDARD}")
 
+            target_compile_definitions(${PROJ_NAME} PRIVATE
+                    ${_${PROJ_NAME}CXXDEFS}
+                    ${dicep_ARG_CXXDEFINITIONS}
+            )
+
             target_compile_options(${PROJ_NAME} PRIVATE
                     # -fno-permissive # don't care about declaration of '<name>' changes meaning of '<name>'
-                    "${diclp_ARG_OPTIONS}"
-                    )
+                    "${_diclp_opts}"
+            )
 
             target_include_directories(${PROJ_NAME}
                     PUBLIC
@@ -461,18 +535,23 @@ macro(define_cxx_library_project name)
                     $<BUILD_INTERFACE:${CMAKE_GENERATED_DIR}>
                     # SYSTEM PRIVATE
                     $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/include>
-                    )
+            )
 
             target_sources(${PROJ_NAME} PRIVATE
                     "$<BUILD_INTERFACE:${diclp_ARG_SOURCES}>"
-                    )
+            )
         else ()
             target_compile_features(${PROJ_NAME} INTERFACE "cxx_std_${diclp_ARG_CXXSTANDARD}")
 
+            target_compile_definitions(${PROJ_NAME} INTERFACE
+                    ${_${PROJ_NAME}CXXDEFS}
+                    ${dicep_ARG_CXXDEFINITIONS}
+            )
+
             target_compile_options(${PROJ_NAME} INTERFACE
                     # -fno-permissive # don't care about declaration of '<name>' changes meaning of '<name>'
-                    "${diclp_ARG_OPTIONS}"
-                    )
+                    "${_diclp_opts}"
+            )
 
             target_include_directories(${PROJ_NAME}
                     INTERFACE
@@ -529,23 +608,23 @@ macro(define_cxx_library_project name)
             target_compile_options(${PROJ_NAME} INTERFACE /wd4800 # truncation to bool warning
 
                     # /D${PROJ_PREFIX}_UNIT_TEST=${_${PROJ_NAME}_unit_test}
-                    )
+            )
         else ()
             if (ENABLE_PPPM_WARNINGS)
                 target_compile_options(${PROJ_NAME} INTERFACE
 
                         # -D${PROJ_PREFIX}_UNIT_TEST=${_${PROJ_NAME}_unit_test}
-                        )
+                )
             else ()
                 if (GCC)
                     target_compile_options(${PROJ_NAME} INTERFACE
                             -Wno-unknown-pragmas  # disable #pragma message() warnings in gcc
                             -ftrack-macro-expansion=0 and -fno-diagnostics-show-caret # https://stackoverflow.com/questions/30255294/how-to-hide-extra-output-from-pragma-message
-                            )
+                    )
                 else ()
                     target_compile_options(${PROJ_NAME} INTERFACE
                             -Wno-unknown-pragmas  # disable #pragma message() warnings in gcc
-                            )
+                    )
                 endif ()
             endif ()
         endif ()
@@ -559,7 +638,7 @@ macro(define_cxx_library_project name)
                     FLEX ${diclp_ARG_FLEX}
                     BISON ${diclp_ARG_BISON}
                     ${diclp_ARG_UNPARSED_ARGUMENTS}
-                    )
+            )
         endif ()
 
 
@@ -608,7 +687,7 @@ set(${PROJ_NAME}_LIBRARIES ${PROJ_NAME})
                         NAMESPACE libs::
                         DESTINATION
                         ${CONFIG_PACKAGE_INSTALL_DIR}
-                        )
+                )
             endif ()
 
         endif () # INSTALL
@@ -626,12 +705,19 @@ set(${PROJ_NAME}_LIBRARIES ${PROJ_NAME})
                 enable_testing()
                 add_subdirectory(tests/)
             endif ()
+            if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/test/")
+                enable_testing()
+                add_subdirectory(test/)
+            endif ()
         endif ()
 
+        if (NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/docs/")
+            set(diclp_ARG_BUILD_DOCS OFF)
+        endif ()
         option(${PROJ_PREFIX}_BUILD_DOCS "build documentations" ${diclp_ARG_BUILD_DOCS})
         debug_print_value(${PROJ_PREFIX}_BUILD_DOCS)
 
-        if (${PROJ_PREFIX}_BUILD_DOCS OR (${CMAKE_CURRENT_SOURCE_DIR} STREQUAL CMAKE_SOURCE_DIR))
+        if (${PROJ_PREFIX}_BUILD_DOCS AND (${CMAKE_CURRENT_SOURCE_DIR} STREQUAL CMAKE_SOURCE_DIR))
             if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/docs/")
                 find_package(Doxygen)
 
@@ -710,7 +796,7 @@ function(add_cxx_standard_to target cxxstandard)
             CXX_STANDARD ${cxxstandard}
             CXX_STANDARD_REQUIRED YES
             CXX_EXTENSIONS OFF # use -std=c++11 rather than -std=gnu++11
-            )
+    )
 endfunction()
 
 function(add_cxx_20_to target)
@@ -719,10 +805,15 @@ function(add_cxx_20_to target)
             CXX_STANDARD 20
             CXX_STANDARD_REQUIRED YES
             CXX_EXTENSIONS OFF # use -std=c++11 rather than -std=gnu++11
-            )
+    )
 endfunction()
 
 
+# https://github.com/google/sanitizers/wiki/AddressSanitizerLeakSanitizer
+# https://github.com/google/sanitizers
+#
+# https://www.jetbrains.com/help/clion/google-sanitizers.html#Configuration
+#
 macro(enable_sanitizer_for_multi_config)
     get_property(isMultiConfig GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
 
@@ -743,21 +834,46 @@ macro(enable_sanitizer_for_multi_config)
 
     message(STATUS "[ASAN] setting up CMAKE_CXX_FLAGS_ASAN")
 
-    set(CMAKE_C_FLAGS_ASAN
-            "${CMAKE_C_FLAGS_DEBUG} -fsanitize=address -fno-omit-frame-pointer" CACHE STRING
-            "Flags used by the C compiler for Asan build type or configuration." FORCE)
+    if (macOS) # after included detect-systems.cmake
+        if (USING_CLANG_APPLE)
+            if (CMAKE_BUILD_TYPE STREQUAL "Asan")
+                message(WARNING "[ASAN] As known issue, AppleClang cannot support Address/Leak Sanitizers. Use brew install llvm and enable leak checking with llvm.")
+            endif ()
+        else ()
+            message(STATUS "[ASAN] using macOS specials")
+            set(CMAKE_C_FLAGS_ASAN
+                    "${CMAKE_C_FLAGS_DEBUG} -DASAN_ENABLED=1 -fsanitize=address -fno-omit-frame-pointer -g -O1" CACHE STRING
+                    "Flags used by the C compiler for Asan build type or configuration." FORCE)
 
-    set(CMAKE_CXX_FLAGS_ASAN
-            "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address -fno-omit-frame-pointer" CACHE STRING
-            "Flags used by the C++ compiler for Asan build type or configuration." FORCE)
+            set(CMAKE_CXX_FLAGS_ASAN
+                    "${CMAKE_CXX_FLAGS_DEBUG} -DASAN_ENABLED=1 -fsanitize=address -fno-omit-frame-pointer -g -O1" CACHE STRING
+                    "Flags used by the C++ compiler for Asan build type or configuration." FORCE)
 
-    set(CMAKE_EXE_LINKER_FLAGS_ASAN
-            "${CMAKE_EXE_LINKER_FLAGS_DEBUG} -fsanitize=address" CACHE STRING
-            "Linker flags to be used to create executables for Asan build type." FORCE)
+            set(CMAKE_EXE_LINKER_FLAGS_ASAN
+                    "${CMAKE_EXE_LINKER_FLAGS_DEBUG} -fsanitize=address" CACHE STRING
+                    "Linker flags to be used to create executables for Asan build type." FORCE)
 
-    set(CMAKE_SHARED_LINKER_FLAGS_ASAN
-            "${CMAKE_SHARED_LINKER_FLAGS_DEBUG} -fsanitize=address" CACHE STRING
-            "Linker lags to be used to create shared libraries for Asan build type." FORCE)
+            set(CMAKE_SHARED_LINKER_FLAGS_ASAN
+                    "${CMAKE_SHARED_LINKER_FLAGS_DEBUG} -fsanitize=address" CACHE STRING
+                    "Linker lags to be used to create shared libraries for Asan build type." FORCE)
+        endif ()
+    else ()
+        set(CMAKE_C_FLAGS_ASAN
+                "${CMAKE_C_FLAGS_DEBUG} -DASAN_ENABLED=1 -fsanitize=address -fno-omit-frame-pointer -g -O1" CACHE STRING
+                "Flags used by the C compiler for Asan build type or configuration." FORCE)
+
+        set(CMAKE_CXX_FLAGS_ASAN
+                "${CMAKE_CXX_FLAGS_DEBUG} -DASAN_ENABLED=1 -fsanitize=address -fno-omit-frame-pointer -g -O1" CACHE STRING
+                "Flags used by the C++ compiler for Asan build type or configuration." FORCE)
+
+        set(CMAKE_EXE_LINKER_FLAGS_ASAN
+                "${CMAKE_EXE_LINKER_FLAGS_DEBUG} -fsanitize=address" CACHE STRING
+                "Linker flags to be used to create executables for Asan build type." FORCE)
+
+        set(CMAKE_SHARED_LINKER_FLAGS_ASAN
+                "${CMAKE_SHARED_LINKER_FLAGS_DEBUG} -fsanitize=address" CACHE STRING
+                "Linker lags to be used to create shared libraries for Asan build type." FORCE)
+    endif ()
 endmacro()
 
 
@@ -765,12 +881,14 @@ function(define_test_program name)
     set(define_test_program_PARAM_OPTIONS)
     set(define_test_program_PARAM_ONE_VALUE_KEYWORDS
             # MAIN_LIB
-            CXXSTANDARD       # such as CXXSTANDARD 17
-            OPTIONS           # cxx compiler options
-            VERSION           # default is ${PROJECT_VERSION}
-            )
-    set(define_test_program_PARAM_MULTI_VALUE_KEYWORDS
             PREFIX
+            CXXSTANDARD          # such as CXXSTANDARD 17
+            VERSION              # default is ${PROJECT_VERSION}
+    )
+    set(define_test_program_PARAM_MULTI_VALUE_KEYWORDS
+            CXXFLAGS              # cxx compiler options
+            CXXDEFINITIONS
+            LINKFLAGS
             HEADERS
             DETAILED_HEADERS
             SOURCES
@@ -778,7 +896,7 @@ function(define_test_program name)
             LIBRARIES
             FLEX
             BISON
-            )
+    )
 
     cmake_parse_arguments(
             define_test_program_ARG
@@ -789,7 +907,8 @@ function(define_test_program name)
     )
     set(define_test_program_usage "define_test_programe(<Name>
      [CXXSTANDARD 17/20/11]
-     [OPTIONS \"-Wall ...\"]
+     [CXXFLAGS -Wall [...]]
+	 [CXXDEFINITIONS A=1 B C=TRUE [...]]
      [VERSION \"\${PROJECT_VERSION}\"]
      [HEADERS a.hh b.hh ...]
      [DETAILED_HEADERS detail/a.hh...]
@@ -846,7 +965,7 @@ function(define_test_program name)
     ensure_options_values(${_proj_name} ${_macro_name_prefix})
     #debug_print_value(_macro_name_prefix)
 
-    debug("--------- Test Program ---------> ${_proj_name} (prefix: ${_name_prefix}) | LIBS: ${define_test_program_ARG_LIBRARIES} | SRC: ${_src_list}.")
+    debug("--------- Test Program ---------> ${_proj_name} (prefix: ${_name_prefix}) | SRC: ${_src_list} | LIBS: ${define_test_program_ARG_LIBRARIES}")
 
     if ("${define_test_program_ARG_VERSION}" STREQUAL "")
         set(define_test_program_ARG_VERSION "${PROJECT_VERSION}")
@@ -866,23 +985,25 @@ function(define_test_program name)
     #target_compile_features(${_proj_name}-${name} PRIVATE cxx_std_11)
     #target_compile_definitions(${_proj_name}-${name} PRIVATE)
     target_compile_definitions(${_proj_name} PRIVATE
-            ${_macro_name_prefix}_ENABLE_ASSERTIONS=${_${_name_prefix}_enable_assertions}
-            ${_macro_name_prefix}_ENABLE_PRECONDITION_CHECKS=${_${_name_prefix}_enable_precondition_checks}
-            ${_macro_name_prefix}_ENABLE_THREAD_POOL_READY_SIGNAL=${_${_name_prefix}_enable_thread_pool_ready_signal}
-            ${_macro_name_prefix}_ENABLE_VERBOSE_LOG=${_${_name_prefix}_enable_verbose_log}
-            ${_macro_name_prefix}_TEST_THREAD_POOL_DBGOUT=${_${_name_prefix}_enable_thread_pool_dbgout}
-            ${_macro_name_prefix}_UNIT_TEST=${_${_name_prefix}_unit_test}
+            ${_${_proj_name}CXXDEFS}
+            ${define_test_program_ARG_CXXDEFINITIONS}
+            #${_macro_name_prefix}_ENABLE_ASSERTIONS=${_${_name_prefix}_enable_assertions}
+            #${_macro_name_prefix}_ENABLE_PRECONDITION_CHECKS=${_${_name_prefix}_enable_precondition_checks}
+            #${_macro_name_prefix}_ENABLE_THREAD_POOL_READY_SIGNAL=${_${_name_prefix}_enable_thread_pool_ready_signal}
+            #${_macro_name_prefix}_ENABLE_VERBOSE_LOG=${_${_name_prefix}_enable_verbose_log}
+            #${_macro_name_prefix}_TEST_THREAD_POOL_DBGOUT=${_${_name_prefix}_enable_thread_pool_dbgout}
+            #${_macro_name_prefix}_UNIT_TEST=${_${_name_prefix}_unit_test}
             #${_name_prefix}_UNIT_TEST=1
             #UNIT_TESTING=1
-            )
+    )
 
     set_target_properties(${_proj_name} PROPERTIES LINKER_LANGUAGE CXX)
 
-    target_compile_features(${_proj_name} PRIVATE "cxx_std_${define_test_program_ARG_CXXSTANDARD}")
+    # target_compile_features(${_proj_name} PRIVATE "cxx_std_${define_test_program_ARG_CXXSTANDARD}")
 
     #target_compile_options(${_proj_name} PRIVATE
     #        # -fno-permissive # don't care about declaration of '<name>' changes meaning of '<name>'
-    #        "${define_test_program_ARG_OPTIONS}"
+    #        "${define_test_program_ARG_CXXFLAGS}"
     #        )
 
     target_include_directories(${_proj_name}
@@ -895,34 +1016,37 @@ function(define_test_program name)
 
             SYSTEM PRIVATE
             $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/include>
-            )
+    )
 
-    target_link_libraries(${_proj_name}
-            PRIVATE
-            Threads::Threads
-            ${define_test_program_ARG_LIBRARIES}
-            # undo_cxx
-            # fsm_cxx
-            # cmdr11::cmdr11
-            # Catch2::Catch2
-            # fmt::fmt-header-only
-            )
+    string(REPLACE ";" " " CXXFLAGS_STR "${define_test_program_ARG_CXXFLAGS}")
     if (MSVC)
-        target_compile_options(${_proj_name} PRIVATE /W4 /WX /utf-8
-                #/D${PROJECT_MACRO_PREFIX}_UNIT_TEST=${_${PROJECT_MACRO_NAME}_unit_test}
-                "${define_test_program_ARG_OPTIONS}"
-                )
-    else ()
+        string(REPLACE " -" " /" CXXFLAGS_STR " ${CXXFLAGS_STR}")
+        list(APPEND define_test_program_ARG_CXXFLAGS
+                /W4 /WX /utf-8
+        )
         target_compile_options(${_proj_name} PRIVATE
+                # /W4 /WX /utf-8
+                # /D${PROJECT_MACRO_PREFIX}_UNIT_TEST=${_${PROJECT_MACRO_NAME}_unit_test}
+                ${define_test_program_ARG_CXXFLAGS}
+        )
+    else ()
+        if (USING_GCC)
+            list(APPEND define_test_program_ARG_CXXFLAGS
+                    -Wl,--demangle
+            )
+        endif ()
+        list(APPEND define_test_program_ARG_CXXFLAGS
                 -pedantic -Wall -Wextra -Wshadow -Werror -pthread
-
-                "${define_test_program_ARG_OPTIONS}"
+        )
+        target_compile_options(${_proj_name} PRIVATE
+                ${define_test_program_ARG_CXXFLAGS} # ${CXXFLAGS_STR}
 
                 #-fno-permissive # don't care about declaration of '<name>' changes meaning of '<name>'
 
                 #-pedantic -Wall -Wextra -Werror=return-type -Wshadow=local -Wempty-body -fdiagnostics-color
                 #-D${PROJECT_MACRO_PREFIX}_UNIT_TEST=${_${PROJECT_MACRO_NAME}_unit_test}
-                )
+        )
+        # message(STATUS "[test project: ${_proj_name}] CXXFLAGS: ${CXXFLAGS_STR}")
         if (USE_DEBUG)
             #            target_compile_options(${_proj_name} PRIVATE
             #                    -fsanitize=address -fno-omit-frame-pointer
@@ -946,6 +1070,17 @@ function(define_test_program name)
         endif ()
     endif ()
 
+    target_link_libraries(${_proj_name}
+            PRIVATE
+            Threads::Threads
+            ${define_test_program_ARG_LIBRARIES}
+            # undo_cxx
+            # fsm_cxx
+            # cmdr11::cmdr11
+            # Catch2::Catch2
+            # fmt::fmt-header-only
+    )
+
 
     if (NOT define_test_program_ARG_FLEX AND NOT define_test_program_ARG_BISON)
     else ()
@@ -955,7 +1090,7 @@ function(define_test_program name)
                 FLEX ${define_test_program_ARG_FLEX}
                 BISON ${define_test_program_ARG_BISON}
                 ${define_test_program_ARG_UNPARSED_ARGUMENTS}
-                )
+        )
     endif ()
 
 
@@ -985,12 +1120,13 @@ endfunction()
 function(define_example_program name)
     set(define_example_program_PARAM_OPTIONS)
     set(define_example_program_PARAM_ONE_VALUE_KEYWORDS
-            CXXSTANDARD       # such as CXXSTANDARD 17
-            OPTIONS           # cxx compiler options
-            VERSION           # default is ${PROJECT_VERSION}
-            )
-    set(define_example_program_PARAM_MULTI_VALUE_KEYWORDS
             PREFIX
+            CXXSTANDARD          # such as CXXSTANDARD 17
+            VERSION              # default is ${PROJECT_VERSION}
+    )
+    set(define_example_program_PARAM_MULTI_VALUE_KEYWORDS
+            CXXFLAGS             # cxx compiler options
+            CXXDEFINITIONS
             HEADERS
             DETAILED_HEADERS
             SOURCES
@@ -998,7 +1134,7 @@ function(define_example_program name)
             LIBRARIES
             FLEX
             BISON
-            )
+    )
 
     cmake_parse_arguments(
             define_example_program_ARG
@@ -1009,7 +1145,8 @@ function(define_example_program name)
     )
     set(define_example_program_usage "define_example_programe(<Name>
      [CXXSTANDARD 17/20/11]
-     [OPTIONS \"-Wall ...\"]
+     [CXXFLAGS -Wall [...]]
+	 [CXXDEFINITIONS A=1 B C=TRUE [...]]
      [VERSION \"\${PROJECT_VERSION}\"]
      [HEADERS a.hh b.hh ...]
      [DETAILED_HEADERS detail/a.hh...]
@@ -1083,23 +1220,17 @@ function(define_example_program name)
     #target_compile_features(${_proj_name}-${name} PRIVATE cxx_std_11)
     #target_compile_definitions(${_proj_name}-${name} PRIVATE)
     target_compile_definitions(${_proj_name} PRIVATE
-            #${_name_prefix}_ENABLE_ASSERTIONS=${_${_name_prefix}_enable_assertions}
-            #${_name_prefix}_ENABLE_PRECONDITION_CHECKS=${_${_name_prefix}_enable_precondition_checks}
-            #${_name_prefix}_ENABLE_THREAD_POOL_READY_SIGNAL=${_${_name_prefix}_enable_thread_pool_ready_signal}
-            #${_name_prefix}_ENABLE_VERBOSE_LOG=${_${_name_prefix}_enable_verbose_log}
-            #${_name_prefix}_TEST_THREAD_POOL_DBGOUT=${_${_name_prefix}_enable_thread_pool_dbgout}
-            #${_name_prefix}_UNIT_TEST=${_${_name_prefix}_unit_test}
-            #${_name_prefix}_UNIT_TEST=1
-            #UNIT_TESTING=1
-            )
+            ${_${_proj_name}CXXDEFS}
+            ${define_test_program_ARG_CXXDEFINITIONS}
+    )
 
     set_target_properties(${_proj_name} PROPERTIES LINKER_LANGUAGE CXX)
 
-    target_compile_features(${_proj_name} PRIVATE "cxx_std_${define_example_program_ARG_CXXSTANDARD}")
+    # target_compile_features(${_proj_name} PRIVATE "cxx_std_${define_example_program_ARG_CXXSTANDARD}")
 
     #target_compile_options(${_proj_name} PRIVATE
     #        # -fno-permissive # don't care about declaration of '<name>' changes meaning of '<name>'
-    #        "${define_example_program_ARG_OPTIONS}"
+    #        "${define_example_program_ARG_CXXFLAGS}"
     #        )
 
     target_include_directories(${_proj_name}
@@ -1112,34 +1243,37 @@ function(define_example_program name)
 
             SYSTEM PRIVATE
             $<INSTALL_INTERFACE:$<INSTALL_PREFIX>/include>
-            )
+    )
 
-    target_link_libraries(${_proj_name}
-            PRIVATE
-            Threads::Threads
-            ${define_example_program_ARG_LIBRARIES}
-            # undo_cxx
-            # fsm_cxx
-            # cmdr11::cmdr11
-            # Catch2::Catch2
-            # fmt::fmt-header-only
-            )
+    string(REPLACE ";" " " CXXFLAGS_STR "${define_test_program_ARG_CXXFLAGS}")
     if (MSVC)
-        target_compile_options(${_proj_name} PRIVATE /W4 /WX /utf-8
-                #/D${PROJECT_MACRO_PREFIX}_UNIT_TEST=${_${PROJECT_MACRO_NAME}_unit_test}
-                "${define_example_program_ARG_OPTIONS}"
-                )
-    else ()
+        string(REPLACE " -" " /" CXXFLAGS_STR " ${CXXFLAGS_STR}")
+        list(APPEND define_example_program_ARG_CXXFLAGS
+                /W4 /WX /utf-8
+        )
         target_compile_options(${_proj_name} PRIVATE
+                #/W4 /WX /utf-8
+                #/D${PROJECT_MACRO_PREFIX}_UNIT_TEST=${_${PROJECT_MACRO_NAME}_unit_test}
+                ${define_example_program_ARG_CXXFLAGS}
+        )
+    else ()
+        if (USING_GCC)
+            list(APPEND define_example_program_ARG_CXXFLAGS
+                    -Wl,--demangle
+            )
+        endif ()
+        list(APPEND define_example_program_ARG_CXXFLAGS
                 -pedantic -Wall -Wextra -Wshadow -Werror -pthread
-
-                "${define_example_program_ARG_OPTIONS}"
+        )
+        target_compile_options(${_proj_name} PRIVATE
+                ${define_example_program_ARG_CXXFLAGS}
 
                 #-fno-permissive # don't care about declaration of '<name>' changes meaning of '<name>'
 
                 #-pedantic -Wall -Wextra -Werror=return-type -Wshadow=local -Wempty-body -fdiagnostics-color
                 #-D${PROJECT_MACRO_PREFIX}_UNIT_TEST=${_${PROJECT_MACRO_NAME}_unit_test}
-                )
+        )
+        # message(STATUS "[example-prog] CXXFLAGS: ${define_example_program_ARG_CXXFLAGS}")
         if (USE_DEBUG)
             #            target_compile_options(${_proj_name} PRIVATE
             #                    -fsanitize=address -fno-omit-frame-pointer
@@ -1162,6 +1296,16 @@ function(define_example_program name)
             #            target_link_options(${_proj_name} PRIVATE -fsanitize=address)
         endif ()
     endif ()
+    target_link_libraries(${_proj_name}
+            PRIVATE
+            Threads::Threads
+            ${define_example_program_ARG_LIBRARIES}
+            # undo_cxx
+            # fsm_cxx
+            # cmdr11::cmdr11
+            # Catch2::Catch2
+            # fmt::fmt-header-only
+    )
 
 
     if (NOT define_example_program_ARG_FLEX AND NOT define_example_program_ARG_BISON)
@@ -1172,7 +1316,7 @@ function(define_example_program name)
                 FLEX ${define_example_program_ARG_FLEX}
                 BISON ${define_example_program_ARG_BISON}
                 ${define_example_program_ARG_UNPARSED_ARGUMENTS}
-                )
+        )
     endif ()
 
 endfunction()

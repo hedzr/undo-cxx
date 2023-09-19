@@ -1,81 +1,82 @@
-
-#message("CMAKE_MODULE_PATH = ${CMAKE_MODULE_PATH}")
-#message(STATUS "CMAKE_TOOLCHAIN_FILE = ${CMAKE_TOOLCHAIN_FILE}")
-#message(STATUS "VCPKG_TARGET_TRIPLET = $ENV{VCPKG_TARGET_TRIPLET}")     # =x64-windows, ...
+# message("CMAKE_MODULE_PATH = ${CMAKE_MODULE_PATH}")
+# message(STATUS "CMAKE_TOOLCHAIN_FILE = ${CMAKE_TOOLCHAIN_FILE}")
+# message(STATUS "VCPKG_TARGET_TRIPLET = $ENV{VCPKG_TARGET_TRIPLET}")     # =x64-windows, ...
 
 include(add-policies)
 cmake_policy(SET CMP0048 NEW)
 
-
 macro(debug msg)
-    message(STATUS "DEBUG ${msg}")
+	message(STATUS "DEBUG ${msg}")
 endmacro()
 
 macro(debug_print_value variableName)
-    debug("${variableName}=\${${variableName}}")
+	debug("${variableName}=\${${variableName}}")
 endmacro()
 
 macro(debug_print_list_value listName)
-    message(STATUS "- List of ${listName} -------------")
-    foreach (lib ${${listName}})
-        message(STATUS "                         ${lib}")
-    endforeach (lib)
-    message(STATUS "- end -")
-endmacro()
+	message(STATUS "- List of ${listName} -------------")
 
+	foreach(lib ${${listName}})
+		message(STATUS "                         ${lib}")
+	endforeach(lib)
+
+	message(STATUS "- end -")
+endmacro()
 
 set(default_build_type "Release")
 
-if (EXISTS "${CMAKE_SOURCE_DIR}/.git")
-    set(default_build_type "Debug")
-endif ()
+if(EXISTS "${CMAKE_SOURCE_DIR}/.git")
+	set(default_build_type "Debug")
+endif()
 
 debug_print_value(CMAKE_BUILD_TYPE)
-if ("${CMAKE_BUILD_TYPE}" STREQUAL "" AND "${CMAKE_CONFIGURATION_TYPES}" STREQUAL "")
-    message(STATUS "Setting build type to '${default_build_type}' as none was specified.")
-    set(CMAKE_BUILD_TYPE "${default_build_type}" CACHE
-            STRING "Choose the type of build." FORCE)
-endif ()
 
-if ("${CMAKE_CONFIGURATION_TYPES}" STREQUAL "")
-    # Set the possible values of build type for cmake-gui
-    set(allowedBuildTypes Asan Debug Release RelWithDebInfo MinSizeRel)
-    set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "${allowedBuildTypes}")
-    # set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo" "Asan")
-    set_property(CACHE CMAKE_BUILD_TYPE PROPERTY HELPSTRING "Choose the type of build")
+if("${CMAKE_BUILD_TYPE}" STREQUAL "" AND "${CMAKE_CONFIGURATION_TYPES}" STREQUAL "")
+	message(STATUS "Setting build type to '${default_build_type}' as none was specified.")
+	set(CMAKE_BUILD_TYPE "${default_build_type}" CACHE
+		STRING "Choose the type of build." FORCE)
+endif()
 
-    # set(CMAKE_CONFIGURATION_TYPES "Debug;Release;MinSizeRel;RelWithDebInfo" CACHE STRING "" FORCE)
-    message(STATUS "CMAKE_CONFIGURATION_TYPES updated: ${CMAKE_CONFIGURATION_TYPES}")
-    message(STATUS "CMAKE_BUILD_TYPE updated: ${CMAKE_BUILD_TYPE}")
-endif ()
+if("${CMAKE_CONFIGURATION_TYPES}" STREQUAL "")
+	# Set the possible values of build type for cmake-gui
+	set(allowedBuildTypes Asan Debug Release RelWithDebInfo MinSizeRel)
+	set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "${allowedBuildTypes}")
 
-if (("${CMAKE_BUILD_TYPE}" STREQUAL "Debug") AND (NOT (${WIN32})))
-    # In non-win32 debug build, debug_malloc is on by default
-    option(USE_DEBUG_MALLOC "Building with memory leak detection capability." ON)
-    option(USE_DEBUG "Building with DEBUG Mode" ON)
-    set(CMAKE_BUILD_NAME "dbg" CACHE STRING "" FORCE)
-else ()
-    # In win32 or non-debug builds, debug_malloc is off by default
-    option(USE_DEBUG_MALLOC "Building with memory leak detection capability." OFF)
-    option(USE_DEBUG "Building with NON-DEBUG Mode" OFF)
+	# set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo" "Asan")
+	set_property(CACHE CMAKE_BUILD_TYPE PROPERTY HELPSTRING "Choose the type of build")
 
-    if ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
-        set(CMAKE_BUILD_NAME "dbg" CACHE STRING "" FORCE)
-        set(CMAKE_DEBUG_POSTFIX "d" CACHE STRING "" FORCE)
-    elseif ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
-        set(CMAKE_BUILD_NAME "rel" CACHE STRING "release mode" FORCE)
-        set(CMAKE_RELEASE_POSTFIX "" CACHE STRING "" FORCE)
-    elseif ("${CMAKE_BUILD_TYPE}" STREQUAL "MinSizeRel")
-        set(CMAKE_BUILD_NAME "rms" CACHE STRING "min-size release mode" FORCE)
-        set(CMAKE_MINSIZEREL_POSTFIX "ms" CACHE STRING "" FORCE)
-    elseif ("${CMAKE_BUILD_TYPE}" STREQUAL "RelWithDebInfo")
-        set(CMAKE_BUILD_NAME "rwd" CACHE STRING "release mode with debug info" FORCE)
-        set(CMAKE_RELWITHDEBINFO_POSTFIX "" CACHE STRING "" FORCE)
-    elseif ("${CMAKE_BUILD_TYPE}" STREQUAL "Asan")
-        set(CMAKE_BUILD_NAME "asan" CACHE STRING "debug mode with sanitizer" FORCE)
-        set(CMAKE_ASAN_POSTFIX "" CACHE STRING "" FORCE)
-    endif ()
-endif ()
+	# set(CMAKE_CONFIGURATION_TYPES "Debug;Release;MinSizeRel;RelWithDebInfo" CACHE STRING "" FORCE)
+	message(STATUS "CMAKE_CONFIGURATION_TYPES updated: ${CMAKE_CONFIGURATION_TYPES}")
+	message(STATUS "CMAKE_BUILD_TYPE updated: ${CMAKE_BUILD_TYPE}")
+endif()
+
+if(("${CMAKE_BUILD_TYPE}" STREQUAL "Debug") AND(NOT(${WIN32})))
+	# In non-win32 debug build, debug_malloc is on by default
+	option(USE_DEBUG_MALLOC "Building with memory leak detection capability." ON)
+	option(USE_DEBUG "Building with DEBUG Mode" ON)
+	set(CMAKE_BUILD_NAME "dbg" CACHE STRING "" FORCE)
+else()
+	# In win32 or non-debug builds, debug_malloc is off by default
+	option(USE_DEBUG_MALLOC "Building with memory leak detection capability." OFF)
+	option(USE_DEBUG "Building with NON-DEBUG Mode" OFF)
+
+	if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+		set(CMAKE_BUILD_NAME "dbg" CACHE STRING "" FORCE)
+		set(CMAKE_DEBUG_POSTFIX "d" CACHE STRING "" FORCE)
+	elseif("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
+		set(CMAKE_BUILD_NAME "rel" CACHE STRING "release mode" FORCE)
+		set(CMAKE_RELEASE_POSTFIX "" CACHE STRING "" FORCE)
+	elseif("${CMAKE_BUILD_TYPE}" STREQUAL "MinSizeRel")
+		set(CMAKE_BUILD_NAME "rms" CACHE STRING "min-size release mode" FORCE)
+		set(CMAKE_MINSIZEREL_POSTFIX "ms" CACHE STRING "" FORCE)
+	elseif("${CMAKE_BUILD_TYPE}" STREQUAL "RelWithDebInfo")
+		set(CMAKE_BUILD_NAME "rwd" CACHE STRING "release mode with debug info" FORCE)
+		set(CMAKE_RELWITHDEBINFO_POSTFIX "" CACHE STRING "" FORCE)
+	elseif("${CMAKE_BUILD_TYPE}" STREQUAL "Asan")
+		set(CMAKE_BUILD_NAME "asan" CACHE STRING "debug mode with sanitizer" FORCE)
+		set(CMAKE_ASAN_POSTFIX "" CACHE STRING "" FORCE)
+	endif()
+endif()
 
 # debug_print_value(CMAKE_BUILD_TYPE)
 message(STATUS ">>> DEBUG MODE: ${CMAKE_BUILD_TYPE} -> ${CMAKE_BUILD_NAME}, ${CMAKE_DEBUG_POSTFIX} ...")
@@ -97,19 +98,19 @@ mark_as_advanced(CMAKE_BUILD_NAME)
 # endif ()
 option(ENABLE_CCACHE "Use ccache for build" ON)
 
-if (${ENABLE_CCACHE})
-    find_program(CCACHE ccache)
+if(${ENABLE_CCACHE})
+	find_program(CCACHE ccache)
 
-    if (NOT "${CCACHE}" STREQUAL "CCACHE-NOTFOUND") # # if (CCACHE)
-        message(STATUS ">>> ccache found and enabled")
-        set(CMAKE_C_COMPILER_LAUNCHER ${CCACHE})
-        set(CMAKE_CXX_COMPILER_LAUNCHER ${CCACHE})
-    else ()
-        message(WARNING ">>> use_ccache enabled, but ccache executable not found: ${CCACHE}")
-    endif ()
-else ()
-    message(STATUS ">>> ccache disabled")
-endif ()
+	if(NOT "${CCACHE}" STREQUAL "CCACHE-NOTFOUND") # # if (CCACHE)
+		message(STATUS ">>> ccache found and enabled")
+		set(CMAKE_C_COMPILER_LAUNCHER ${CCACHE})
+		set(CMAKE_CXX_COMPILER_LAUNCHER ${CCACHE})
+	else()
+		message(WARNING ">>> use_ccache enabled, but ccache executable not found: ${CCACHE}")
+	endif()
+else()
+	message(STATUS ">>> ccache disabled")
+endif()
 
 # ############################## for testing
 set(ENV{CTEST_OUTPUT_ON_FAILURE} 1)
@@ -117,24 +118,28 @@ set_property(GLOBAL PROPERTY UNIT_TEST_TARGETS)
 mark_as_advanced(UNIT_TEST_TARGETS)
 
 #
-if (CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR)
-    set(_DEFAULT_TESTS ${USE_DEBUG})
-else ()
-    set(_DEFAULT_TESTS OFF)
-endif ()
+if(CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR)
+	set(_DEFAULT_TESTS ${USE_DEBUG})
+else()
+	set(_DEFAULT_TESTS OFF)
+endif()
+
 option(ENABLE_EXAMPLES "Enable examples" OFF)
 option(ENABLE_TESTS "Enable tests" ${USE_DEBUG})
 option(ENABLE_AUTOMATE_TESTS "Enable automated tests at local" OFF)
+option(ENABLE_UINT_TESTS "Enable unit tests / CTest" OFF)
 
+if($ENV{CI_RUNNING})
+	set(ENABLE_AUTOMATE_TESTS OFF)
+	set(ENABLE_UINT_TESTS ON)
+	message(STATUS "CI_RUNNING found in env, set ENABLE_AUTOMATE_TESTS to OFF, and set UnitTest/CTest ON")
+endif()
 
-if ($ENV{CI_RUNNING})
-    set(ENABLE_AUTOMATE_TESTS OFF)
-endif ()
+if(${ENABLE_TESTS})
+	enable_testing()
 
-if (${ENABLE_TESTS})
-    enable_testing()
-    # include(CTest) # note: this adds a BUILD_TESTING which defaults to ON
-endif ()
+	# include(CTest) # note: this adds a BUILD_TESTING which defaults to ON
+endif()
 
 option(ENABLE_PPPM_WARNINGS "Enable Pre-Process Pragma Messages Warning when compiling" OFF)
 
@@ -142,24 +147,24 @@ option(ENABLE_PPPM_WARNINGS "Enable Pre-Process Pragma Messages Warning when com
 # include(GNUInstallDirs)
 
 # set(CMAKE_VERBOSE_MAKEFILE ON)
-if ((${CMAKE_VERBOSE_DEBUG} OR ${USE_DEBUG}) OR ($ENV{CI_RUNNING}))
-    # Enable verbose output from Makefile builds.
-    # This variable is a cache entry initialized (to FALSE) by the project() command.
-    # Users may enable the option in their local build tree to get more verbose
-    # output from Makefile builds and show each command line as it is launched.
-    set(CMAKE_VERBOSE_MAKEFILE ON CACHE BOOL ON)
+if((${CMAKE_VERBOSE_DEBUG} OR ${USE_DEBUG}) OR($ENV{CI_RUNNING}))
+	# Enable verbose output from Makefile builds.
+	# This variable is a cache entry initialized (to FALSE) by the project() command.
+	# Users may enable the option in their local build tree to get more verbose
+	# output from Makefile builds and show each command line as it is launched.
+	set(CMAKE_VERBOSE_MAKEFILE ON CACHE BOOL ON)
 
-    # Default value for POSITION_INDEPENDENT_CODE of targets.
-    # This variable is used to initialize the POSITION_INDEPENDENT_CODE property
-    # on all the targets. See that target property for additional information.
-    # If set, it’s value is also used by the try_compile() command.
-    set(CMAKE_POSITION_INDEPENDENT_CODE CACHE BOOL "ON")
-    message(STATUS ">>> CMAKE_VERBOSE_DEBUG ON")
-endif ()
+	# Default value for POSITION_INDEPENDENT_CODE of targets.
+	# This variable is used to initialize the POSITION_INDEPENDENT_CODE property
+	# on all the targets. See that target property for additional information.
+	# If set, it’s value is also used by the try_compile() command.
+	set(CMAKE_POSITION_INDEPENDENT_CODE CACHE BOOL "ON")
+	message(STATUS ">>> CMAKE_VERBOSE_DEBUG ON")
+endif()
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-include(options-def)     # load .options.cmake
-include(pkg-mgmt)        # use `load_package_manager` macro and options: USE_CONAN or USE_VCPKG
-include(utils)           # more tools such as print_debug_value, ...
-include(dummy-project)   # detect ARCH, cxx compilers, versions ...
+include(options-def) # load .options.cmake
+include(pkg-mgmt) # use `load_package_manager` macro and options: USE_CONAN or USE_VCPKG
+include(utils) # more tools such as print_debug_value, ...
+include(dummy-project) # detect ARCH, cxx compilers, versions ...

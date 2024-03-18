@@ -4,10 +4,11 @@
 ![CMake Build Matrix](https://github.com/hedzr/undo-cxx/workflows/CMake%20Build%20Matrix/badge.svg?event=release)
 --> [![GitHub tag (latest SemVer)](https://img.shields.io/github/tag/hedzr/undo-cxx.svg?label=release)](https://github.com/hedzr/undo-cxx/releases)
 
-`undo-cxx` C++17 library provides a undo/redo subsystem (linear or restricted non-linear).
+`undo-cxx` C++17/20 library provides a undo/redo subsystem (linear or restricted non-linear).
 
 ## Newest
 
+- v0.3.0, build passed for c++20
 - v0.2.5, upgrade undo-log.hh, undo-util.hh, undo-zcore.hh, and cxx-macros.cmake
 - v0.2.3, upgrade cmake scripts
 - _v0.2.2_, fixes around the project files

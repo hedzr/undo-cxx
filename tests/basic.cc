@@ -16,11 +16,12 @@ int main() {
   std::cout << '\n'
             << UNDO_CXX_PROJECT_NAME << " v" << UNDO_CXX_VERSION_STRING << '\n'
             << UNDO_CXX_ARCHIVE_NAME << '\n'
-            << "   version: " << UNDO_CXX_VERSION_STR << '\n'
-            << "    branch: " << UNDO_CXX_GIT_BRANCH << '\n'
-            << "      hash: " << UNDO_CXX_GIT_COMMIT_HASH << '\n'
-            << "       cpu: " << UNDO_CXX_CPU << '\n'
-            << "      arch: " << UNDO_CXX_CPU_ARCH << '\n'
-            << " arch-name: " << UNDO_CXX_CPU_ARCH_NAME << '\n'
-            << "build-name: " << UNDO_CXX_BUILD_NAME << '\n';
+            << "             version: " << UNDO_CXX_VERSION_STR << '\n'
+            << "              branch: " << UNDO_CXX_GIT_BRANCH << '\n'
+            << "                hash: " << UNDO_CXX_GIT_COMMIT_HASH << '\n'
+            << "                 cpu: " << UNDO_CXX_CPU << '\n'
+            << "                arch: " << UNDO_CXX_CPU_ARCH << '\n'
+            << "           arch-name: " << UNDO_CXX_CPU_ARCH_NAME << '\n'
+            << "          build-name: " << UNDO_CXX_BUILD_NAME << '\n'
+            << " built C++ Standards: " << __cplusplus << '\n';
 }

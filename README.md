@@ -8,6 +8,7 @@
 
 ## Newest
 
+- v0.3.1, added `newest_item()` for #1
 - v0.3.0, build passed for c++20
 - v0.2.5, upgrade undo-log.hh, undo-util.hh, undo-zcore.hh, and cxx-macros.cmake
 - v0.2.3, upgrade cmake scripts

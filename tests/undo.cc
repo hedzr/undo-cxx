@@ -120,37 +120,44 @@ namespace dp { namespace undo { namespace bugs {
 }}} // namespace dp::undo::bugs
 
 void test_undo_sys() {
-using namespace dp::undo::test;
-using namespace dp::undo::bugs;
+  using namespace dp::undo::test;
+  using namespace dp::undo::bugs;
 
-using State = std::string;
-using M = undo_cxx::undoable_cmd_system_t<State>;
-using UndoCmdT = UndoCmd<State>;
-using RedoCmdT = RedoCmd<State>;
-using FontStyleCmdT = FontStyleCmd<State>;
+  using State = std::string;
+  using M = undo_cxx::undoable_cmd_system_t<State>;
+  using UndoCmdT = UndoCmd<State>;
+  using RedoCmdT = RedoCmd<State>;
+  using FontStyleCmdT = FontStyleCmd<State>;
 
-M undoable_cmd_system;
+  M undoable_cmd_system;
 
-// do some stuffs
+  // do some stuffs
 
-undoable_cmd_system.invoke<FontStyleCmdT>("italic state1");
-undoable_cmd_system.invoke<FontStyleCmdT>("italic-bold state2");
-undoable_cmd_system.invoke<FontStyleCmdT>("underline state3");
-undoable_cmd_system.invoke<FontStyleCmdT>("italic state4");
+  undoable_cmd_system.invoke<FontStyleCmdT>("italic state1");
+  std::cout << "  > newest item: " << *undoable_cmd_system.newest_item() << '\n';
+  undoable_cmd_system.invoke<FontStyleCmdT>("italic-bold state2");
+  undoable_cmd_system.invoke<FontStyleCmdT>("underline state3");
+  undoable_cmd_system.invoke<FontStyleCmdT>("italic state4");
+  std::cout << "  > newest item: " << *undoable_cmd_system.newest_item() << '\n';
 
-// and try to undo or redo
+  // and try to undo or redo
 
-undoable_cmd_system.invoke<UndoCmdT>("undo 1");
-undoable_cmd_system.invoke<UndoCmdT>("undo 2");
-undoable_cmd_system.invoke<RedoCmdT>("redo 1");
-undoable_cmd_system.invoke<UndoCmdT>("undo 3");
-undoable_cmd_system.invoke<UndoCmdT>("undo 4");
+  undoable_cmd_system.invoke<UndoCmdT>("undo 1");
+  std::cout << "  > focused item: " << *undoable_cmd_system.focused_item() << ", newest item: " << *undoable_cmd_system.newest_item() << '\n';
+  undoable_cmd_system.invoke<UndoCmdT>("undo 2");
+  std::cout << "  > focused item: " << *undoable_cmd_system.focused_item() << ", newest item: " << *undoable_cmd_system.newest_item() << '\n';
+  undoable_cmd_system.invoke<RedoCmdT>("redo 1");
+  std::cout << "  > focused item: " << *undoable_cmd_system.focused_item() << ", newest item: " << *undoable_cmd_system.newest_item() << '\n';
+  undoable_cmd_system.invoke<UndoCmdT>("undo 3");
+  std::cout << "  > focused item: " << *undoable_cmd_system.focused_item() << ", newest item: " << *undoable_cmd_system.newest_item() << '\n';
+  undoable_cmd_system.invoke<UndoCmdT>("undo 4");
+  std::cout << "  > focused item: " << *undoable_cmd_system.focused_item() << ", newest item: " << *undoable_cmd_system.newest_item() << '\n';
 }
 
 int main() {
 
-// test_undo_basic();
-test_undo_sys();
+  // test_undo_basic();
+  test_undo_sys();
 
-return 0;
+  return 0;
 }

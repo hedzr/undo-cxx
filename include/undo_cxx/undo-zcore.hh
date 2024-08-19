@@ -449,9 +449,26 @@ namespace undo_cxx {
       }
     }
 
+    // @desc to return the focused item at undo/redo stack.
+    // @note this api relies on the invocations of one of
+    //   these apis: undo/redo.
+    // @note _position will be reset to end() once invoke()
+    //   invoked.
     MementoPtr &focused_item() { return *_position; }
     MementoPtr const &focused_item() const { return *_position; }
     std::ptrdiff_t position() { return std::distance(_saved_states.begin(), _position); }
+    Iterator newest_iterator() { return _saved_states.end(); }
+    Iterator oldest_iterator() { return _saved_states.begin(); }
+    // @desc to return the newest item at stack.
+    // @note this is NOT thread-safe, you must keep watching the
+    //   usages of iterators on multi-thread scene. Or you're working
+    //   for a ui app and it has single main ui-thread to operate
+    //   any of ui-commands.
+    MementoPtr &newest_item() {
+      auto it = _position;
+      it--;
+      return *it;
+    }
 
     auto size() const { return _saved_states.size(); }
     bool empty() const { return _saved_states.empty(); }

@@ -8,33 +8,29 @@
 // Created by Hedzr Yeh on 2021/10/14.
 //
 
-#include "undo_cxx.hh"
-
-#include <iomanip>
+#include <cstddef>
 #include <iostream>
-#include <math.h>
 #include <string>
 
 #include <functional>
 #include <memory>
-#include <random>
 
-#include <deque>
-#include <list>
-#include <optional>
-#include <queue>
-#include <stack>
-#include <vector>
+#include <string_view>
+#include <utility>
+
+#include "undo_cxx/undo-log.hh"
+#include "undo_cxx/undo-util.hh"
+#include "undo_cxx/undo-zcore.hh"
 
 namespace word_processor {
 
   template<typename State>
   class FontStyleCmd : public undo_cxx::cmd_t<State> {
   public:
-    ~FontStyleCmd() {}
+    ~FontStyleCmd() override {}
     FontStyleCmd() {}
-    explicit FontStyleCmd(std::string const &default_state_info)
-        : _info(default_state_info) {}
+    explicit FontStyleCmd(std::string default_state_info)
+        : _info(std::move(default_state_info)) {}
     UNDO_CXX_DEFINE_DEFAULT_CMD_TYPES(FontStyleCmd, undo_cxx::cmd_t);
 
   protected:
@@ -63,10 +59,10 @@ namespace word_processor {
   template<typename State>
   class UndoCmd : public undo_cxx::base_undo_cmd_t<State> {
   public:
-    ~UndoCmd() {}
+    ~UndoCmd() override {}
     using undo_cxx::base_undo_cmd_t<State>::base_undo_cmd_t;
-    explicit UndoCmd(std::string const &default_state_info)
-        : _info(default_state_info) {}
+    explicit UndoCmd(std::string default_state_info)
+        : _info(std::move(default_state_info)) {}
     UNDO_CXX_DEFINE_DEFAULT_CMD_TYPES(UndoCmd, undo_cxx::base_undo_cmd_t);
 
   protected:
@@ -94,10 +90,10 @@ namespace word_processor {
   template<typename State>
   class RedoCmd : public undo_cxx::base_redo_cmd_t<State> {
   public:
-    ~RedoCmd() {}
+    ~RedoCmd() override {}
     using undo_cxx::base_redo_cmd_t<State>::base_redo_cmd_t;
-    explicit RedoCmd(std::string const &default_state_info)
-        : _info(default_state_info) {}
+    explicit RedoCmd(std::string default_state_info)
+        : _info(std::move(default_state_info)) {}
     UNDO_CXX_DEFINE_DEFAULT_CMD_TYPES(RedoCmd, undo_cxx::base_redo_cmd_t);
 
   protected:
@@ -162,58 +158,60 @@ namespace word_processor {
 
 } // namespace word_processor
 
-void test_undo_sys() {
-  using namespace word_processor;
-  actions_controller controller;
+namespace {
+  static void test_undo_sys() {
+    using namespace word_processor;
+    actions_controller controller;
 
-  using FontStyleCmd = actions_controller::FontStyleCmdT;
-  using UndoCmd = actions_controller::UndoCmdT;
-  using RedoCmd = actions_controller::RedoCmdT;
+    using FontStyleCmd = actions_controller::FontStyleCmdT;
+    using UndoCmd = actions_controller::UndoCmdT;
+    using RedoCmd = actions_controller::RedoCmdT;
 
-  // do some stuffs
+    // do some stuffs
 
-  // controller.invoke("word_processor::FontStyleCmd<std::__1::basic_string<char> >", "italic state1");
-  controller.invoke<FontStyleCmd>("italic state1");
-  controller.invoke<FontStyleCmd>("italic-bold state2");
-  controller.invoke<FontStyleCmd>("underline state3");
-  controller.invoke<FontStyleCmd>("italic state4");
+    // controller.invoke("word_processor::FontStyleCmd<std::__1::basic_string<char> >", "italic state1");
+    controller.invoke<FontStyleCmd>("italic state1");
+    controller.invoke<FontStyleCmd>("italic-bold state2");
+    controller.invoke<FontStyleCmd>("underline state3");
+    controller.invoke<FontStyleCmd>("italic state4");
 
-  // and try to undo or redo
+    // and try to undo or redo
 
-  controller.invoke<UndoCmd>("undo 1");
-  controller.invoke<UndoCmd>("undo 2");
+    controller.invoke<UndoCmd>("undo 1");
+    controller.invoke<UndoCmd>("undo 2");
 
-  controller.invoke<RedoCmd>("redo 1");
+    controller.invoke<RedoCmd>("redo 1");
 
-  controller.invoke<UndoCmd>("undo 3");
-  controller.invoke<UndoCmd>("undo 4");
+    controller.invoke<UndoCmd>("undo 3");
+    controller.invoke<UndoCmd>("undo 4");
 
-  controller.invoke("word_processor::RedoCmd", "redo 2 redo");
-}
+    controller.invoke("word_processor::RedoCmd", "redo 2 redo");
+  }
 
-void test_undo_pre() {
-  using namespace std::string_view_literals;
-  std::string_view v1{"v1"};
-  std::size_t v1_hash = std::hash<std::string_view>{}(v1);
-  std::cout << v1 << ", hash = "sv << v1_hash << '\n';
-  using namespace undo_cxx;
-  using State = std::string;
-  // using FontStyleCmd = word_processor::FontStyleCmd<State>;
-  using UndoCmd = word_processor::UndoCmd<State>;
-  using RedoCmd = word_processor::RedoCmd<State>;
+  static void test_undo_pre() {
+    using namespace std::string_view_literals;
+    std::string_view const v1{"v1"};
+    std::size_t const v1_hash = std::hash<std::string_view>{}(v1);
+    std::cout << v1 << ", hash = "sv << v1_hash << '\n';
+    using namespace undo_cxx;
+    using State = std::string;
+    // using FontStyleCmd = word_processor::FontStyleCmd<State>;
+    using UndoCmd = word_processor::UndoCmd<State>;
+    using RedoCmd = word_processor::RedoCmd<State>;
 #if !defined(_MSC_VER)
-  std::cout << "id: " << id_gen<UndoCmd>{}(UndoCmd{}) << '\n';
-  std::cout << "id: " << id_name<UndoCmd>() << '\n';
-  std::cout << "id: " << id_name<RedoCmd>() << '\n';
+    std::cout << "id: " << id_gen<UndoCmd>{}(UndoCmd{}) << '\n';
+    std::cout << "id: " << id_name<UndoCmd>() << '\n';
+    std::cout << "id: " << id_name<RedoCmd>() << '\n';
 #else
-  std::cout << "detail::type_name: " << debug::detail::type_name<UndoCmd>() << '\n';
-  std::cout << "type_name        : " << debug::type_name<UndoCmd>() << '\n';
-  std::cout << "id_name          : " << id_name<UndoCmd>() << '\n';
-  std::cout << "id_name          : " << id_name<RedoCmd>() << '\n';
+    std::cout << "detail::type_name: " << debug::detail::type_name<UndoCmd>() << '\n';
+    std::cout << "type_name        : " << debug::type_name<UndoCmd>() << '\n';
+    std::cout << "id_name          : " << id_name<UndoCmd>() << '\n';
+    std::cout << "id_name          : " << id_name<RedoCmd>() << '\n';
 #endif
-  dbg_debug("OK, UndoCmd's id = %s", std::string(id_name<UndoCmd>()).c_str());
-  dbg_debug("OK, RedoCmd's id = %s", std::string(id_name<RedoCmd>()).c_str());
-}
+    dbg_debug("OK, UndoCmd's id = %s", std::string(id_name<UndoCmd>()).c_str());
+    dbg_debug("OK, RedoCmd's id = %s", std::string(id_name<RedoCmd>()).c_str());
+  }
+} // namespace
 
 int main() {
 

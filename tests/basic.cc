@@ -2,8 +2,8 @@
 // Created by Hedzr Yeh on 2021/9/26.
 //
 
-#include "undo_cxx.hh"
-#include <iomanip>
+#include "undo_cxx-config.hh"
+#include "undo_cxx-version.hh"
 #include <iostream>
 
 int main() {

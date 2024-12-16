@@ -8,14 +8,14 @@
 // Created by Hedzr Yeh on 2021/10/16.
 //
 
+#include <cstddef>
 #include <iostream>
-#include <list>
-#include <stack>
+#include <string>
 #include <string_view>
 #include <vector>
 
 template<typename T>
-constexpr std::string_view type_name();
+constexpr static std::string_view type_name();
 
 template<>
 constexpr std::string_view type_name<void>() { return "void"; }
@@ -25,7 +25,7 @@ namespace detail {
   using type_name_prober = void;
 
   template<typename T>
-  constexpr std::string_view wrapped_type_name() {
+  constexpr static std::string_view wrapped_type_name() {
 #ifdef __clang__
     return __PRETTY_FUNCTION__;
 #elif defined(__GNUC__)
@@ -37,11 +37,11 @@ namespace detail {
 #endif
   }
 
-  constexpr std::size_t wrapped_type_name_prefix_length() {
+  constexpr static std::size_t wrapped_type_name_prefix_length() {
     return wrapped_type_name<type_name_prober>().find(type_name<type_name_prober>());
   }
 
-  constexpr std::size_t wrapped_type_name_suffix_length() {
+  constexpr static std::size_t wrapped_type_name_suffix_length() {
     return wrapped_type_name<type_name_prober>().length() - wrapped_type_name_prefix_length() - type_name<type_name_prober>().length();
   }
 

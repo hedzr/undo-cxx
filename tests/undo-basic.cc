@@ -8,25 +8,14 @@
 // Created by Hedzr Yeh on 2021/10/25.
 //
 
-#include "undo_cxx.hh"
+#include "undo_cxx/undo-log.hh"
 
-#include <iomanip>
-#include <iostream>
-#include <math.h>
 #include <string>
 
-#include <functional>
-#include <memory>
-#include <random>
-
-#include <deque>
 #include <list>
 #include <optional>
-#include <queue>
-#include <stack>
-#include <vector>
 
-namespace dp { namespace undo { namespace basic {
+namespace dp::undo::basic {
 
   /**
      * @brief memento POJO container
@@ -51,9 +40,9 @@ namespace dp { namespace undo { namespace basic {
       dbg_print("  . restore memento state : %s", undo_cxx::to_string(*ret).c_str());
       return ret;
     }
-    auto size() const { return _saved_states.size(); }
-    bool empty() const { return _saved_states.empty(); }
-    bool can_pop() const { return !empty(); }
+    [[nodiscard]] auto size() const { return _saved_states.size(); }
+    [[nodiscard]] bool empty() const { return _saved_states.empty(); }
+    [[nodiscard]] bool can_pop() const { return !empty(); }
 
   private:
     std::list<State> _saved_states;
@@ -101,20 +90,18 @@ namespace dp { namespace undo { namespace basic {
     }
   };
 
-}}} // namespace dp::undo::basic
-namespace dp { namespace undo { namespace bugs {
-  int v_int = 0;
-}}} // namespace dp::undo::bugs
+} // namespace dp::undo::basic
+namespace {
+  static int v_int = 0;
 
-void test_undo_basic() {
-using namespace dp::undo::basic;
-caretaker<std::string> c;
-c.run();
-}
-
+  static void test_undo_basic() {
+    using namespace dp::undo::basic;
+    caretaker<std::string> c;
+    c.run();
+  }
+} // namespace
 int main() {
+  test_undo_basic();
 
-test_undo_basic();
-
-return 0;
+  return v_int;
 }
